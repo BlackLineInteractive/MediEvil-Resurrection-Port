@@ -412,7 +412,7 @@ def param_info(plist):
     for p in plist:
         m = re.match(r'^(.*?)(' + ID + r')$', p.strip())
         ty = (m.group(1) if m else p).strip()
-        out.append((m.group(2) if m else '', ty in ('float', 'double', 'float10')))
+        out.append((m.group(2) if m else '', ty in ('float', 'double', 'float10'), ty))
     return out
 
 
@@ -435,6 +435,8 @@ def split_args(s):
 def fill_passthrough(body, own, sigs):
     """Calls with fewer arguments than the callee takes: EABI passes the caller's own argument registers
     through unchanged (Ghidra drops them), so supply the caller's parameter in the same register."""
+    own_types = [t for _, _, t in own]
+    own = [(n, f) for n, f, _ in own]
     own_i = [n for n, f in own if not f]
     own_f = [n for n, f in own if f]
     pat = re.compile(r'::psp::Caller<&f_([0-9a-f]{8})>\{\}\(')
@@ -455,12 +457,15 @@ def fill_passthrough(body, own, sigs):
         args = split_args(body[start:k - 1])
         callee = sigs.get(a)
         if callee and len(args) < len(callee):
+            callee = [(n, f) for n, f, _ in callee]
             ni = sum(1 for _, f in callee[:len(args)] if not f)
             nf = sum(1 for _, f in callee[:len(args)] if f)
             extra = []
-            for _, isf in callee[len(args):]:
+            for j, (_, isf) in enumerate(callee[len(args):], start=len(args)):
+                # an undefined4 parameter of the caller may well be the float register (Ghidra could not tell)
+                undef = j < len(own) and own_types[j] in ('undefined4', 'U4')
                 if isf:
-                    extra.append(own_f[nf] if nf < len(own_f) else '0.0f'); nf += 1
+                    extra.append(own_f[nf] if nf < len(own_f) else own[j][0] if undef else '0.0f'); nf += 1
                 else:
                     extra.append(own_i[ni] if ni < len(own_i) else '0'); ni += 1
             new = ', '.join([x.strip() for x in args] + extra)

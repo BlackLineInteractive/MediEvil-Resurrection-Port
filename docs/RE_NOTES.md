@@ -392,7 +392,21 @@ Runtime model (`src/Decomp/Runtime.h`):
 - Imports (`/* lib NID 0x... */` 8-byte stubs) are weak `U4 f_addr(U4 a0..a7)` stubs; define the same symbol in a
   hand-written file to implement one.
 
-First run: 15538 functions, 116 auto-stubbed (0.75%), 195 imports.
+- Float/int casts: Ghidra prints a bit reinterpretation (p-code CAST) and a numeric conversion (TRUNC,
+  INT2FLOAT) the same way. The export prefixes reinterpreting casts with `__bc_` (the CAST op hangs on the
+  operand token, or on the op whose output feeds it); the transpiler turns them into `BC<T>`; an unmarked
+  `(float)` becomes `NumF` (numeric; `undefined4` sources are rereads).
+- Register pass-through: a wrapper such as newlib `acosf` calls `__ieee754_acosf()` with no arguments because
+  f12 is never touched. Calls with fewer arguments than the callee takes get the caller's own parameter in the
+  same EABI register (an `undefined4` parameter may stand for a float register).
+- `Boot()` loads the image, `RunStaticCtors()` runs `.ctors` (0x3527a8, 642 entries, all 640 run cleanly).
+  634 functions that only `.ctors`/vtables point at were created with `CreateFunctions.java`
+  (`?addr` = only if no function contains it, to keep switch targets intact).
+
+Status: 16368 functions, 191 auto-stubbed (1.2%), 195 imports; build ~90 s with 10 cores.
+`medievil-gametest` checks the translation against hand calculation: danbrain speed curve `FUN_0008ce24`, the
+game's acosf (table `0x3de210` from `FUN_0020f284`), and the pad stick filter `FUN_001ea594` (deadzone
+0.236, square-to-circle on diagonals, angle 0 = up, pi/2 = right).
 Pad button table 0x33f380 (8 actions x 2 layouts): 0 Triangle, 1 Square/Cross, 2 Cross/Square, 3 Circle, 4 R,
 5 L, 6 Select, 7 Start. Danbrain posts messages to components instead of moving Dan itself (type 6 = move to
 point at speed, type 1 = stop; `FUN_001c5c98`), see `FUN_0008a854`.
