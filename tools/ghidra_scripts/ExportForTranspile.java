@@ -106,6 +106,55 @@ public class ExportForTranspile extends GhidraScript {
         return t instanceof AbstractFloatDataType;
     }
 
+    private static boolean qualifies(PcodeOp op) {
+        return op != null && op.getOpcode() == PcodeOp.CAST && op.getOutput() != null
+                && isFloat(op.getInput(0)) != isFloat(op.getOutput())
+                && op.getInput(0).getSize() == op.getOutput().getSize();
+    }
+
+    // The op of a cast is not on its tokens: it is the op of the operand's variable token, or a
+    // descendant of the value the operand expression produces.
+    private static boolean feedsCast(PcodeOp op) {
+        if (op == null) return false;
+        if (op.getOpcode() == PcodeOp.CAST) return qualifies(op);
+        Varnode out = op.getOutput();
+        if (out == null) return false;
+        Iterator<PcodeOp> it = out.getDescendants();
+        while (it.hasNext()) if (qualifies(it.next())) return true;
+        return false;
+    }
+
+    private static boolean isBitCast(List<ClangNode> toks, int i) {
+        int k = i + 1;
+        // closing ')' of the cast
+        while (k < toks.size() && ((ClangToken) toks.get(k)).getText().trim().isEmpty()) k++;
+        if (k >= toks.size() || !((ClangToken) toks.get(k)).getText().equals(")")) return false;
+        k++;
+        while (k < toks.size() && ((ClangToken) toks.get(k)).getText().trim().isEmpty()) k++;
+        if (k >= toks.size()) return false;
+        ClangToken first = (ClangToken) toks.get(k);
+        if (!first.getText().equals("(")) {
+            if (feedsCast(first.getPcodeOp())) return true;
+            // function call or unary operator: look a few tokens on
+            for (int m = k + 1, seen = 0; m < toks.size() && seen < 3; m++) {
+                ClangToken u = (ClangToken) toks.get(m);
+                if (u.getText().trim().isEmpty()) continue;
+                seen++;
+                if (feedsCast(u.getPcodeOp())) return true;
+            }
+            return false;
+        }
+        int depth = 0;
+        for (int m = k; m < toks.size(); m++) {
+            ClangToken u = (ClangToken) toks.get(m);
+            String x = u.getText();
+            if (x.equals("(")) depth++;
+            else if (x.equals(")")) { if (--depth == 0) break; }
+            else if (depth == 1 && feedsCast(u.getPcodeOp())) return true;
+        }
+        return false;
+    }
+
     // C text where a cast that only reinterprets bits between float and integer (p-code CAST, not
     // TRUNC / INT2FLOAT) has its type token prefixed with "__bc_", e.g. (__bc_uint)fVar1.
     private static String markedC(DecompileResults res) {
@@ -123,19 +172,8 @@ public class ExportForTranspile extends GhidraScript {
                 continue;
             }
             String text = t.getText();
-            if (t instanceof ClangTypeToken) {
-                PcodeOp op = t.getPcodeOp();
-                if (op == null && t.Parent() instanceof ClangTokenGroup) {
-                    // the cast's op hangs on a sibling token
-                    ClangTokenGroup g = (ClangTokenGroup) t.Parent();
-                    for (int i = 0; i < g.numChildren() && op == null; i++)
-                        if (g.Child(i) instanceof ClangToken) op = ((ClangToken) g.Child(i)).getPcodeOp();
-                }
-                if (op != null && op.getOpcode() == PcodeOp.CAST && op.getOutput() != null
-                        && isFloat(op.getInput(0)) != isFloat(op.getOutput())
-                        && op.getInput(0).getSize() == op.getOutput().getSize())
-                    text = "__bc_" + text;
-            }
+            if (t instanceof ClangTypeToken && isBitCast(toks, toks.indexOf(n)))
+                text = "__bc_" + text;
             sb.append(text);
         }
         return sb.toString();

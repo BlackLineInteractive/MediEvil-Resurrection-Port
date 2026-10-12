@@ -471,6 +471,20 @@ template <class T> struct BC {
     operator T() const { return v; }
 };
 
+// An unmarked (float)x is a numeric conversion (p-code INT2FLOAT / FLOAT2FLOAT): integers convert as
+// signed values, anything float-typed passes through.
+struct NumF {
+    float v;
+    template <class A> NumF(const A& a) {
+        if constexpr (std::is_arithmetic_v<A>) v = float(a);
+        else if constexpr (std::is_same_v<A, U4>) v = float(int32_t(a.v));
+        else if constexpr (std::is_same_v<A, VS>) v = a.f;
+        else if constexpr (std::is_convertible_v<A, float>) v = float(a);   // Field / RV lanes hold floats
+        else v = float(int32_t(UB(a)));
+    }
+    operator float() const { return v; }
+};
+
 // Return values of unknown use: converts to float or integer by bit pattern like a register would.
 struct RV {
     uint64_t v;
