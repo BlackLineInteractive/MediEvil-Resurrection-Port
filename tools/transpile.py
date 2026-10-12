@@ -552,6 +552,7 @@ def main():
     funcs, names = load(args.indir)
     unknown = set()
     call_re = re.compile(r'(^|[^\w.>])(' + ID + r')\s*\(')
+    stmt_calls, void_funcs = {}, set()
     for a, f in funcs.items():
         h = find_header(f.text, f.name)
         body = f.text[h[3]:] if h else ''
@@ -570,6 +571,19 @@ def main():
             line_start = body.rfind('\n', 0, m.start(2)) + 1
             if body[line_start:m.start(2)].strip() not in ('',):
                 USEDRET.add(ca)
+            else:
+                stmt_calls.setdefault(a, set()).add(ca)
+        if h and re.match(r'^(?:\w+\s+)*void$', h[0].strip()):
+            void_funcs.add(a)
+    # a void function whose value is used returns its last call's v0, so those callees return values too
+    changed = True
+    while changed:
+        changed = False
+        for a in list(USEDRET):
+            if a in void_funcs:
+                for c in stmt_calls.get(a, ()):
+                    if c not in USEDRET:
+                        USEDRET.add(c); changed = True
     for a, f in funcs.items():
         h = find_header(f.text, f.name) if not f.nid else None
         if h:
