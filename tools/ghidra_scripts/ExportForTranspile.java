@@ -25,6 +25,7 @@ import ghidra.program.model.data.AbstractFloatDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.TypeDef;
 import ghidra.program.model.pcode.PcodeOp;
+import ghidra.program.model.pcode.PcodeOpAST;
 import ghidra.program.model.pcode.Varnode;
 
 import ghidra.app.decompiler.DecompInterface;
@@ -144,6 +145,11 @@ public class ExportForTranspile extends GhidraScript {
         ClangToken first = (ClangToken) toks.get(k);
         if (!first.getText().equals("(")) {
             if (feedsCast(first.getPcodeOp())) return true;
+            // only a function call or a unary operator needs a look further on; a plain operand does not
+            String ft = first.getText();
+            if (!(first instanceof ghidra.app.decompiler.ClangFuncNameToken)
+                    && !ft.equals("-") && !ft.equals("*") && !ft.equals("~") && !ft.equals("!") && !ft.equals("&"))
+                return false;
             // function call or unary operator: look a few tokens on
             for (int m = k + 1, seen = 0; m < toks.size() && seen < 3; m++) {
                 ClangToken u = (ClangToken) toks.get(m);
@@ -182,8 +188,52 @@ public class ExportForTranspile extends GhidraScript {
         if (root == null) return res.getDecompiledFunction().getC();
         List<ClangNode> toks = new ArrayList<>();
         root.flatten(toks);
+        // extraout_* variables are the return register of a call Ghidra thinks returns nothing: find the
+        // CALL that defines each one, so the call statement can be written as "extraout_v0 = FUN(...)"
+        java.util.Map<PcodeOp, String> callResult = new java.util.HashMap<>();
+        for (ClangNode n : toks) {
+            if (!(n instanceof ghidra.app.decompiler.ClangVariableToken)) continue;
+            ClangToken t = (ClangToken) n;
+            if (!t.getText().startsWith("extraout_")) continue;
+            Varnode v = ((ghidra.app.decompiler.ClangVariableToken) t).getVarnode();
+            if (v == null && t.getHighVariable() != null) v = t.getHighVariable().getRepresentative();
+            if (v == null && t.getHighVariable() != null) {
+                for (Varnode inst : t.getHighVariable().getInstances()) if (inst.getDef() != null) { v = inst; break; }
+            }
+            if (v == null) continue;
+            PcodeOp def = v.getDef();
+            // the value may reach the variable through an INDIRECT or COPY
+            for (int hop = 0; def != null && hop < 4 && def.getOpcode() != PcodeOp.CALL && def.getOpcode() != PcodeOp.CALLIND; hop++) {
+                if (def.getOpcode() == PcodeOp.INDIRECT) {
+                    // an INDIRECT caused by a call sits at that call's address
+                    PcodeOp call = null;
+                    java.util.Iterator<PcodeOpAST> ops = res.getHighFunction().getPcodeOps(def.getSeqnum().getTarget());
+                    while (ops.hasNext()) {
+                        PcodeOp o = ops.next();
+                        if (o.getOpcode() == PcodeOp.CALL || o.getOpcode() == PcodeOp.CALLIND) call = o;
+                    }
+                    def = call;
+                    break;
+                }
+                def = def.getInput(0) != null ? def.getInput(0).getDef() : null;
+            }
+            if (def != null && (def.getOpcode() == PcodeOp.CALL || def.getOpcode() == PcodeOp.CALLIND))
+                callResult.putIfAbsent(def, t.getText());
+        }
+        java.util.Set<PcodeOp> written = new java.util.HashSet<>();
         StringBuilder sb = new StringBuilder();
         for (ClangNode n : toks) {
+            if (n instanceof ghidra.app.decompiler.ClangFuncNameToken) {
+                PcodeOp op = ((ClangToken) n).getPcodeOp();
+                String rv = op == null ? null : callResult.get(op);
+                // only a call used as a statement; "x = FUN()" already names its result
+                int e = sb.length();
+                while (e > 0 && Character.isWhitespace(sb.charAt(e - 1))) e--;
+                String before = sb.substring(Math.max(0, e - 4), e);
+                boolean statement = e == 0 || before.endsWith(";") || before.endsWith("{") || before.endsWith("}")
+                        || before.endsWith(":") || before.endsWith("else");
+                if (rv != null && statement && written.add(op)) sb.append(rv).append(" = ");
+            }
             ClangToken t = (ClangToken) n;
             if (t instanceof ghidra.app.decompiler.ClangBreak) {
                 sb.append('\n');

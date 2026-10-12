@@ -12,6 +12,11 @@
 #include <map>
 #include <string>
 #include <thread>
+#include <algorithm>
+#include <condition_variable>
+#include <functional>
+#include <memory>
+#include <mutex>
 
 namespace psp {
 
@@ -228,8 +233,6 @@ PSPCALL(sceKernelCreateCallback) { UNUSED; return uint32_t(g_nextUid++); }
 PSPCALL(sceKernelCpuSuspendIntr) { UNUSED; return 0; }
 PSPCALL(sceKernelCpuResumeIntr) { UNUSED; return 0; }
 PSPCALL(sceKernelIsCpuIntrEnable) { UNUSED; return 1; }
-PSPCALL(sceKernelSuspendDispatchThread) { UNUSED; return 1; }
-PSPCALL(sceKernelResumeDispatchThread) { UNUSED; return 0; }
 PSPCALL(sceKernelStdout) { UNUSED; return 1; }
 PSPCALL(sceKernelStderr) { UNUSED; return 2; }
 PSPCALL(sceKernelStdin) { UNUSED; return 0; }
@@ -241,38 +244,237 @@ PSPCALL(sceUtilityGetSystemParamInt) {
     return 0;
 }
 
-// ── synchronisation: one guest thread runs, so waits never block ──
+// ── threads: the game's own thread bodies run as host threads, one at a time (a baton), switching only
+// in blocking calls - the single-core PSP's behaviour. Lower priority number runs first. ──
+} // namespace psp::game
+
+namespace psp {
+namespace {
+
+struct GThread {
+    int id = 0;
+    std::string name;
+    uint32_t entry = 0, prio = 0x20, stackTop = 0;
+    std::function<bool()> ready;          // the condition a blocked thread waits for
+    uint64_t wakeAt = 0;                  // delay / vblank deadline (micros), 0 = none
+    bool started = false, done = false;
+    int wakeups = 0;
+    std::condition_variable cv;
+};
+
+std::mutex g_sched;
+std::map<int, std::unique_ptr<GThread>> g_threads;
+int g_current = 1;
+thread_local int t_self = 1;
+struct SubIntr { uint32_t handler, arg; bool enabled; };
+std::map<int, SubIntr> g_vblankHandlers;
+uint64_t g_nextVblank = 0;
+constexpr uint64_t kVblankUs = 16683;
+
+thread_local bool t_inInterrupt = false;
+
+void RunVblankHandlers(std::unique_lock<std::mutex>& lk) {
+    uint64_t now = Micros();
+    if (now < g_nextVblank) return;
+    g_nextVblank = now + kVblankUs;
+    auto handlers = g_vblankHandlers;
+    lk.unlock();   // the running thread still holds the baton; handlers may call platform functions
+    t_inInterrupt = true;
+    for (auto& [no, h] : handlers)
+        if (h.enabled && h.handler)
+            if (Thunk t = FindThunk(h.handler)) { CallRegs r; r.i[0] = uint32_t(no); r.i[1] = h.arg; r.ni = 2; t(r); }
+    t_inInterrupt = false;
+    lk.lock();
+}
+
+// Called with the lock held by the running thread: hand the baton to the best runnable thread, wait for it back.
+void Reschedule(std::unique_lock<std::mutex>& lk) {
+    GThread* self = g_threads[t_self].get();
+    for (;;) {
+        RunVblankHandlers(lk);
+        uint64_t now = Micros();
+        GThread* best = nullptr;
+        uint64_t earliest = UINT64_MAX;
+        for (auto& [id, t] : g_threads) {
+            if (!t->started || t->done) continue;
+            bool timeUp = t->wakeAt && now >= t->wakeAt;
+            bool ok = (!t->ready || t->ready()) && (!t->wakeAt || timeUp);
+            if (t->ready && t->wakeAt && timeUp) ok = true;   // wait with timeout expired
+            if (ok && (!best || t->prio < best->prio)) best = t.get();
+            if (!ok && t->wakeAt) earliest = std::min(earliest, t->wakeAt);
+        }
+        if (best) {
+            best->ready = nullptr;
+            best->wakeAt = 0;
+            g_current = best->id;
+            if (best != self) {
+                best->cv.notify_one();
+                if (!self->done) self->cv.wait(lk, [&] { return g_current == self->id; });
+            }
+            return;
+        }
+        // nobody can run: sleep until the next deadline or vblank
+        uint64_t until = std::min(earliest, g_nextVblank);
+        if (until == UINT64_MAX) Fatal("all guest threads blocked forever");
+        lk.unlock();
+        if (until > now) std::this_thread::sleep_for(std::chrono::microseconds(until - now));
+        lk.lock();
+    }
+}
+
+void Block(std::function<bool()> cond, uint64_t wakeAt = 0) {
+    if (t_inInterrupt) return;   // interrupt handlers never block
+    std::unique_lock<std::mutex> lk(g_sched);
+    GThread* self = g_threads[t_self].get();
+    if (cond && cond() && !wakeAt) { if (self) self->ready = nullptr; return; }
+    self->ready = std::move(cond);
+    self->wakeAt = wakeAt;
+    Reschedule(lk);
+}
+
+void ThreadMain(GThread* t, uint32_t argLen, uint32_t argp) {
+    t_self = t->id;
+    {
+        std::unique_lock<std::mutex> lk(g_sched);
+        t->cv.wait(lk, [&] { return g_current == t->id; });
+    }
+    g_sp = t->stackTop;
+    if (Thunk th = FindThunk(t->entry)) {
+        CallRegs r; r.i[0] = argLen; r.i[1] = argp; r.ni = 2;
+        th(r);
+    } else Unimplemented(t->entry, t->name.c_str());
+    std::unique_lock<std::mutex> lk(g_sched);
+    t->done = true;
+    Reschedule(lk);
+}
+
+void EnsureMainThread() {
+    if (g_threads.count(1)) return;
+    auto t = std::make_unique<GThread>();
+    t->id = 1; t->name = "main"; t->prio = 0x20; t->started = true;
+    g_threads[1] = std::move(t);
+}
+
+} // namespace
+
+void GuestYield() { EnsureMainThread(); Block(nullptr, Micros() + 1); }
+
+} // namespace psp
+
+namespace psp::game {
+
+PSPCALL(sceKernelCreateThread) {
+    UNUSED;
+    EnsureMainThread();
+    auto t = std::make_unique<GThread>();
+    t->id = g_nextUid++;
+    t->name = GuestString(a0);
+    t->entry = a1;
+    t->prio = a2;
+    uint32_t stack = std::max<uint32_t>(uint32_t(a3), 0x4000);
+    g_heapHigh = (g_heapHigh - stack) & ~15u;
+    t->stackTop = g_heapHigh + stack - 64;
+    TRACE("thread '%s' entry %08x prio %u stack %x\n", t->name.c_str(), t->entry, t->prio, stack);
+    int id = t->id;
+    g_threads[id] = std::move(t);
+    return uint32_t(id);
+}
+PSPCALL(sceKernelStartThread) {
+    UNUSED;
+    EnsureMainThread();
+    GThread* t = g_threads.count(int(uint32_t(a0))) ? g_threads[int(uint32_t(a0))].get() : nullptr;
+    if (!t) return uint32_t(0x80020198);
+    // arguments are copied onto the new thread's stack
+    uint32_t argp = 0;
+    if (uint32_t(a1) && uint32_t(a2)) {
+        t->stackTop = (t->stackTop - uint32_t(a1)) & ~15u;
+        std::memcpy(g_mem + t->stackTop, g_mem + uint32_t(a2), uint32_t(a1));
+        argp = t->stackTop;
+        t->stackTop -= 64;
+    }
+    t->started = true;
+    std::thread(ThreadMain, t, uint32_t(a1), argp).detach();
+    GuestYield();   // let a higher priority thread start right away
+    return 0;
+}
+PSPCALL(sceKernelExitThread) { UNUSED; std::unique_lock<std::mutex> lk(g_sched); g_threads[t_self]->done = true; Reschedule(lk); for (;;) std::this_thread::sleep_for(std::chrono::hours(1)); }
+PSPCALL(sceKernelExitDeleteThread) { return PSP_sceKernelExitThread(a0, a1, a2, a3, a4, a5, a6, a7); }
+PSPCALL(sceKernelChangeThreadPriority) {
+    UNUSED;
+    int id = uint32_t(a0) ? int(uint32_t(a0)) : t_self;
+    EnsureMainThread();
+    if (g_threads.count(id)) g_threads[id]->prio = a1;
+    return 0;
+}
+PSPCALL(sceKernelGetThreadId) { UNUSED; return uint32_t(t_self); }
+PSPCALL(sceKernelDelayThread) { UNUSED; EnsureMainThread(); Block(nullptr, Micros() + std::max<uint32_t>(uint32_t(a0), 1)); return 0; }
+PSPCALL(sceKernelDelayThreadCB) { return PSP_sceKernelDelayThread(a0, a1, a2, a3, a4, a5, a6, a7); }
+PSPCALL(sceKernelSleepThread) {
+    UNUSED; EnsureMainThread();
+    GThread* self = g_threads[t_self].get();
+    Block([self] { if (self->wakeups > 0) { self->wakeups--; return true; } return false; });
+    return 0;
+}
+PSPCALL(sceKernelWakeupThread) { UNUSED; if (g_threads.count(int(uint32_t(a0)))) g_threads[int(uint32_t(a0))]->wakeups++; return 0; }
+PSPCALL(sceKernelWaitThreadEnd) {
+    UNUSED; EnsureMainThread();
+    int id = int(uint32_t(a0));
+    Block([id] { return !g_threads.count(id) || g_threads[id]->done; });
+    return 0;
+}
+PSPCALL(sceKernelSuspendDispatchThread) { UNUSED; return 1; }
+PSPCALL(sceKernelResumeDispatchThread) { UNUSED; return 0; }
+
+// ── semaphores and event flags ──
 PSPCALL(sceKernelCreateSema) { UNUSED; int id = g_nextUid++; g_semas[id] = a2; return uint32_t(id); }
 PSPCALL(sceKernelDeleteSema) { UNUSED; return 0; }
-PSPCALL(sceKernelSignalSema) { UNUSED; g_semas[int(uint32_t(a0))] += uint32_t(a1); return 0; }
-PSPCALL(sceKernelWaitSema) { UNUSED; uint32_t& v = g_semas[int(uint32_t(a0))]; if (v >= uint32_t(a1)) v -= uint32_t(a1); return 0; }
+PSPCALL(sceKernelSignalSema) { UNUSED; g_semas[int(uint32_t(a0))] += uint32_t(a1); GuestYield(); return 0; }
+PSPCALL(sceKernelWaitSema) {
+    UNUSED; EnsureMainThread();
+    int id = int(uint32_t(a0)); uint32_t n = std::max<uint32_t>(uint32_t(a1), 1);
+    Block([id, n] { uint32_t& v = g_semas[id]; if (v >= n) { v -= n; return true; } return false; });
+    return 0;
+}
 PSPCALL(sceKernelPollSema) { UNUSED; uint32_t& v = g_semas[int(uint32_t(a0))]; if (v < uint32_t(a1)) return uint32_t(0x800201a9); v -= uint32_t(a1); return 0; }
 PSPCALL(sceKernelCreateEventFlag) { UNUSED; int id = g_nextUid++; g_flags[id] = a2; return uint32_t(id); }
 PSPCALL(sceKernelDeleteEventFlag) { UNUSED; return 0; }
 PSPCALL(sceKernelSetEventFlag) { UNUSED; g_flags[int(uint32_t(a0))] |= uint32_t(a1); return 0; }
 PSPCALL(sceKernelClearEventFlag) { UNUSED; g_flags[int(uint32_t(a0))] &= uint32_t(a1); return 0; }
-static uint64_t FlagWait(A id, A bits, A mode, A out) {
-    uint32_t& v = g_flags[int(uint32_t(id))];
-    if (uint32_t(out)) *GP<uint32_t>(uint32_t(out)) = v;
-    bool ok = (uint32_t(mode) & 1) ? (v & uint32_t(bits)) != 0 : (v & uint32_t(bits)) == uint32_t(bits);
-    if (ok && (uint32_t(mode) & 0x20)) v &= ~uint32_t(bits);
-    if (ok && (uint32_t(mode) & 0x10)) v = 0;
-    return ok ? 0 : uint32_t(0x800201af);
+static bool FlagTest(int id, uint32_t bits, uint32_t mode, uint32_t out) {
+    uint32_t& v = g_flags[id];
+    bool ok = (mode & 1) ? (v & bits) != 0 : (v & bits) == bits;
+    if (ok) {
+        if (out) *GP<uint32_t>(out) = v;
+        if (mode & 0x20) v &= ~bits;
+        if (mode & 0x10) v = 0;
+    }
+    return ok;
 }
-PSPCALL(sceKernelWaitEventFlag) { UNUSED; return FlagWait(a0, a1, a2, a3); }
-PSPCALL(sceKernelPollEventFlag) { UNUSED; return FlagWait(a0, a1, a2, a3); }
+PSPCALL(sceKernelWaitEventFlag) {
+    UNUSED; EnsureMainThread();
+    int id = int(uint32_t(a0)); uint32_t bits = a1, mode = a2, out = a3;
+    Block([=] { return FlagTest(id, bits, mode, out); });
+    return 0;
+}
+PSPCALL(sceKernelPollEventFlag) { UNUSED; return FlagTest(int(uint32_t(a0)), a1, a2, a3) ? 0 : uint32_t(0x800201af); }
 
-// ── threads: not run yet; the game's thread bodies get replaced or called where needed ──
-PSPCALL(sceKernelCreateThread) {
+// ── interrupts: the vblank sub-interrupt handlers run at 60 Hz from the scheduler ──
+PSPCALL(sceKernelRegisterSubIntrHandler) {
     UNUSED;
-    int id = g_nextUid++;
-    std::fprintf(stderr, "[psp] thread '%s' entry %08x (not started)\n", GuestString(a0).c_str(), uint32_t(a1));
-    return uint32_t(id);
+    if (uint32_t(a0) == 30) g_vblankHandlers[int(uint32_t(a1))] = {a2, a3, false};   // PSP_VBLANK_INT
+    return 0;
 }
-PSPCALL(sceKernelStartThread) { UNUSED; return 0; }
-PSPCALL(sceKernelChangeThreadPriority) { UNUSED; return 0; }
-PSPCALL(sceKernelGetThreadId) { UNUSED; return 1; }
-PSPCALL(sceKernelDelayThread) { UNUSED; return 0; }
-PSPCALL(sceKernelDelayThreadCB) { UNUSED; return 0; }
+PSPCALL(sceKernelEnableSubIntr) { UNUSED; if (uint32_t(a0) == 30) g_vblankHandlers[int(uint32_t(a1))].enabled = true; return 0; }
+PSPCALL(sceKernelReleaseSubIntrHandler) { UNUSED; if (uint32_t(a0) == 30) g_vblankHandlers.erase(int(uint32_t(a1))); return 0; }
+
+// ── display: no PSP framebuffer; frames are drawn by the port's renderer ──
+PSPCALL(sceDisplaySetMode) { UNUSED; return 0; }
+PSPCALL(sceDisplaySetFrameBuf) { UNUSED; return 0; }
+PSPCALL(sceDisplayWaitVblankStart) {
+    UNUSED; EnsureMainThread();
+    uint64_t next = g_nextVblank ? g_nextVblank : Micros() + kVblankUs;
+    Block(nullptr, next);
+    return 0;
+}
 
 } // namespace psp::game
