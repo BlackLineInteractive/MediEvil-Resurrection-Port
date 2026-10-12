@@ -1,5 +1,5 @@
 #pragma once
-// gamedata.bin — the single resource archive of MediEvil: Resurrection (PSP).
+// gamedata.bin - the single resource archive of MediEvil: Resurrection (PSP).
 // Format notes: docs/RE_NOTES.md §3.
 #include <cstdint>
 #include <cstdio>

@@ -1,4 +1,4 @@
-// GhidraDecompileEverything.java — decompiles every function in the program.
+// GhidraDecompileEverything.java - decompiles every function in the program.
 //
 // The existing GhidraDecompileAll.java walks the call graph outward from the
 // HandleAttributes entry points, which is right when the question is "what does

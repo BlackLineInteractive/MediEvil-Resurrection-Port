@@ -1,4 +1,4 @@
-// MediEvil: Resurrection level/model viewer — reads gamedata.bin directly.
+// MediEvil: Resurrection level/model viewer - reads gamedata.bin directly.
 //
 //   medievil-viewer [--data gamedata.bin] [--names docs/names.tsv]
 //                   [--group N] [--model name.mesh] [--shot out.png] [--yaw deg] [--pitch deg]
