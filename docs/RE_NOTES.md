@@ -168,3 +168,29 @@ start when game restarts).
 - Graveyard: 2 subzones, 240 instances, 0 missing models and textures.
 - TODO: blending currently relies on texture alpha - actual GE state from MFL1 (byte8/mode) is not yet mapped.
   Diggable grave is a game entity (ENTS), not a static instance.
+
+## 11. Entities (ENTS) and templates (`src/Core/Entity.*`)
+| main.prx | C++ | What |
+|---|---|---|
+| `FUN_001d95ac` CEntityLoader_LoadENTS | `LoadEntities` | `ENT0`: u32 count, u32 recordOffset[count] (from payload start) |
+| `FUN_001db478` EntityRecord_Relocate | token walk in `LoadEntities` | record: u32 ?, u32 nameOffset, token stream |
+| `FUN_001d975c` CEntityManager_CreateFromRecord | `Entity::className` | class = name up to `':'`, hashed |
+| `FUN_001d7f58` CEntityTemplate_ctor | `TemplateDB` | 454 static registrations |
+
+- **Token stream** (records and templates): `u32 kind [u32 string]`: `1`/`2` bare string (component list),
+  `5` `"KEY=VALUE"` / `"KEY = VALUE !"`, `3` begin block (component name), `4` end block. Records end when depth
+  < 0; templates are one top-level block. In ENTS strings are offsets from the payload start, in templates
+  absolute pointers into main.prx.
+- **Record**: `UID`, `POS=x y z`, `ROT=x y z w` (quaternion), `ZONE`, `CONNECTIONS=<uid> n m <linktype> ... !`,
+  `HIB=1` (hibernating until woken), plus component blocks (`zombiebrain{NAVNAME=...}`, `corporeal{RES=...}`).
+- **Templates** hold all the design data: components, `INITHLTH`, `SIGHTRANGE`, speeds, `corporeal.RES`/`ANIMS`.
+  `tools/entity_templates.py main.prx decomp/ghidra_full > assets/entity_templates.txt` (needed by the viewer;
+  generated from your own binary, gitignored).
+- Model of an entity = `corporeal.RES` (`.../x.group`) -> `x.mesh` (static) or `x.skel` (animated).
+- **SKEL** = `SKE0{SKL0 hierarchy, JNA0 joint names, BMA0 bind matrices}` + skinned `MOD0` (vtype 0x5A2/0x45A2/0x85A2:
+  1-3 u16 weights; `JNT0` = per-fragment bone palette, 8 x u8, 0xFF unused) + `VOA3`, `ACT4`. Vertices are in
+  model space, so the bind (T) pose renders without bones.
+- **Vertex/matrix alignment**: FVT1 and INM1 data start at the next 16-byte boundary *relative to the asset
+  start* (filler is 'PAD...' or zeros; some fragments also have trailing filler). Verified on 17 230 fragments.
+- Graveyard: 81 entities, 70 drawn, 1 hibernating (gold under the diggable grave), 10 without a model.
+- Vertices without a colour component use 0x80 (= 1.0 on PSP).
