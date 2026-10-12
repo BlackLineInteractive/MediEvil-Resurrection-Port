@@ -1,0 +1,5481 @@
+template addoorfort base=entcomposite size=0x360
+  { addoorfort
+    1 addoorfortbrain
+    1 collision
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    { addoorfortbrain
+      5 OPENEVENT = fort_door_open !
+    }
+    { collision
+    }
+    { corporeal
+      5 RES = exporteddata/objects/ad_door_hindou_fort/ad_door_hindou_fort.group
+      5 ANIMS = exporteddata/objects/ad_door_hindou_fort/ad_door_hindou_fort_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template addoorfortbrain base=brain size=0x150
+template addropper base=agent size=0x380
+  { addropper
+    1 addropperbrain
+    1 soundplayer
+    5 ENTCOLFLG = 1217
+    5  SURG = exporteddata/objects/hr_boulder/hr_boulder.group ! 
+    { addropperbrain
+    }
+    { soundplayer
+    }
+  }
+template addropperbrain base=brain size=0x180
+template adtrebuchet base=entcomposite size=0x360
+  { adtrebuchet
+    1 adtrebuchetbrain
+    1 collision
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 5
+    5 ROLE = hostile !
+    5 XZRAD = 0.0
+    { adtrebuchetbrain
+    }
+    { collision
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_trebuchet/all_trebuchet.group
+      5 ANIMS = exporteddata/objects/all_trebuchet/all_trebuchet_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template adtrebuchetbrain base=entcomposite size=0x180
+template agent base=entcomposite size=0x380
+template angelrotating base=agent size=0x380
+  { angelrotating
+    1 angelrotatingbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 67108864
+    { angelrotatingbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_angel_rotating/all_angel_rotating.group !
+    }
+    { collision
+      5 SURF = 0
+    }
+    { soundplayer
+    }
+  }
+template angelrotatingbrain base=brain size=0x1b0
+template animentity base=entcomposite size=0x380
+  { animentity
+    1 corporeal
+    1 collision
+    { corporeal
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 RES = exporteddata/characters/chicken/chicken.group
+    }
+  }
+template armouredknight base=agent size=0x380
+  { armouredknight
+    1 armouredknightbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ROLE = hostile !
+    5 XZRAD = 0.9
+    5 SURFTYPE = 17
+    { armouredknightbrain
+      5 CLOSEATTACKD0 = 1.5
+      5 BLOODTEXTURE = spark_abe.psm
+      5 BLOODSCALE = 0.28
+      5 BLOODLIFE = 0.5
+      5 BLOODBITS = 1
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/armoured_knight/armoured_knight_apkg.group
+      5 RES = exporteddata/characters/armoured_knight/armoured_knight.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 DEATHCONF=1
+    }
+    { soundplayer
+    }
+  }
+template armouredknightbrain base=stdbrain size=0x4f0
+template arrow base=entcomposite size=0x360
+  { arrow
+    1 projectilebrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG = 1040
+    5 ROLE = hostile projectile !
+    { projectilebrain
+      5 FARUPD = 1
+      5 VFARUPD = 1
+      5 DAMAGE = 30.0
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_arrow/all_arrow.group
+    }
+  }
+template arrowbrain base=brain size=0x150
+template arrowoffatearrow base=entcomposite size=0x360
+  { arrowoffatearrow
+    1 projectilebrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    5 XZRAD = 1.5
+    { projectilebrain
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 ENTITYHITSOUND = crossbow_hit_wood
+      5 ENVIRONMENTHITSOUND = crossbow_hit_wood
+      5 ENVIRONMENTSTUCKSOUND = crossbow_hit_wood
+    }
+    { corporeal
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 RES = exporteddata/objects/af_archery_arrow/af_archery_arrow.group
+    }
+  }
+template barrelpushable base=agent size=0x380
+  { barrelpushable
+    1 barrelpushablebrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    5 COLDATARAD = 1.0
+    5 ENTCOLFLG = 67665920
+    5 XZRAD = 0.45
+    5 HEIGHT = 0.5
+    5 UPDPRI = 40
+    { barrelpushablebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_barrel_smash/all_barrel_smash.group
+      5 ANIMS = exporteddata/objects/all_barrel_smash/all_barrel_smash_apkg.group
+    }
+    { collision
+      5 STATE=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template barrelpushablebrain base=brain size=0x170
+template barrelrolling base=agent size=0x380
+  { barrelrolling
+    1 barrelrollingbrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG=66753
+    { barrelrollingbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/gs_barrel_rolling_smashable/gs_barrel_rolling_smashable.group
+      5 ANIMS = exporteddata/objects/gs_barrel_rolling_smashable/gs_barrel_rolling_smashable_apkg.group
+    }
+    { collision
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template barrelrollingbrain base=brain size=0x1c0
+template barrelstatic base=agent size=0x380
+  { barrelstatic
+    1 barrelstaticbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG = 67207169
+    5 COLDATARAD = 1.0
+    5 UPDPRI = 40
+    { barrelstaticbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_barrel_smash/all_barrel_smash.group
+      5 ANIMS = exporteddata/objects/all_barrel_smash/all_barrel_smash_apkg.group
+    }
+    { directanimmotion
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template barrelstaticbrain base=brain size=0x170
+template bellows base=agent size=0x380
+  { bellows
+    1 bellowsbrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG=1
+    { bellowsbrain
+    }
+    { corporeal
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 RES = exporteddata/objects/sv_bellows/sv_bellows.group
+      5 ANIMS = exporteddata/objects/sv_bellows/sv_bellows_apkg.group
+    }
+    { collision
+    }
+    { directanimmotion
+      5 FARUPD=1
+      5 VFARUPD = 1
+    }
+    { bellowsbrain
+      5 FARUPD=1
+      5 VFARUPD = 1
+    }
+    { soundplayer
+    }
+  }
+template bellowsbrain base=brain size=0x1e0
+template birdcage base=agent size=0x380
+  { birdcage
+    1 birdcagebrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=33984
+    5 COLDATARAD=2.0
+    5 UPDPRI = 40
+    { birdcagebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/gs_bird_cage/gs_bird_cage.group
+      5 RADIUS = 14.0
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template birdcagebrain base=brain size=0x180
+template blockpushable base=agent size=0x380
+  { blockpushable
+    1 blockpushablebrain
+    1 corporeal
+    1 fireeffect
+    1 soundplayer
+    { blockpushablebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/ma_block_pushable/ma_block_pushable.group
+    }
+    { fireeffect
+      5 SPRITECNT = 50
+      5 SPEED = 1.0
+      5 HILITE = 1
+      5 TEXTURE = fire2_abe.flip
+      5 MAXSCALE = 1.0
+      5 MAXTTL = 1.5
+      5 SPREAD = 0.5
+      5 YOFF = 0.0
+    }
+    { soundplayer
+    }
+  }
+template blockpushablebrain base=brain size=0x1b0
+template bloodexplosion base=entcomposite size=0x360
+  { bloodexplosion
+    1 explosionbrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG = 1233
+    5 ROLE = hostile explosion !
+    { explosionbrain
+      5 VFARUPD = 1
+      5 DURATION=4.0
+      5 DAMAGE=0.0
+      5 CREATESSPRITE = 1
+      5 CREATESPARTICLES = 1
+      5 CREATESSHELL = 0
+      5 SPRITENAME = sfx_splash_abe.psm
+      5 SPRITESTARTFADE=2.0
+      5 DECALSPRITE=1
+      5 PARTICLETYPE=0
+      5 PARTICLECOLOURSTART = 	0.0,1.0,0.0
+      5 PARTICLECOLOUREND = 	0.0,1.0,0.0
+      5 SPRITECOLOUR = 	0.0,1.0,0.0
+    }
+    { corporeal
+    }
+  }
+template boatpirate base=agent size=0x380
+  { boatpirate
+    1 boatpiratebrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG=33984
+    5 COLDATARAD=20.0
+    5 UPDPRI = 40
+    { boatpiratebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sd_boat_pirate/sd_boat_pirate.group
+      5 RADIUS = 20.0
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+    }
+    { collision
+    }
+  }
+template boatpiratebrain base=brain size=0x180
+template boatrope base=agent size=0x380
+  { boatrope
+    1 boatropebrain
+    1 collision
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    { boatropebrain
+      5 BOATEVENT = deathboat_released
+    }
+    5 ROLE = neutral !
+    5 ENTCOLFLG = 67108869
+    { collision
+    }
+    { corporeal
+      5 RES = exporteddata/objects/ad_boat_rope/ad_boat_rope.group
+      5 ANIMS = exporteddata/objects/ad_boat_rope/ad_boat_rope_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template boatropebrain base=brain size=0x150
+template boilerguard base=agent size=0x380
+  { boilerguard
+    1 boilerguardbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ROLE = hostile !
+    5 INITHLTH = 350
+    5 XZRAD = 0.8
+    5 SURG = exporteddata/objects/all_projectile_boiler/all_projectile_boiler.group !
+    5 SURFTYPE = 17
+    { boilerguardbrain
+      5 WAITPROB = 0.2
+      5 CLOSEATTACKCNT = 1
+      5 RANGEATTACKCNT = 1
+      5 SIGHTRANGE = 20.0
+      5 RANGEATTACKD0 = 12.0
+      5 RANGEDEL0 = 0.0
+      5 CLOSEATTACKD0 = 4.0
+      5 BLOODTEXTURE = spark_abe.psm
+      5 BLOODSCALE = 0.28
+      5 BLOODLIFE = 0.5
+      5 BLOODBITS = 2
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/boiler_guard/boiler_guard_apkg.group
+      5 RES = exporteddata/characters/boiler_guard/boiler_guard.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 TRMOV = 300.0
+    }
+    { soundplayer
+    }
+  }
+template boilerguardbrain base=stdbrain size=0x7f0
+template boilerguardprojbrain base=projectilebrain size=0x200
+template bookbrain base=brain size=0x150
+template boulder base=agent size=0x380
+  { boulder
+    1 boulderbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG = 83886289
+    5 COLDATARAD = 2.5
+    5 COLDATAY = 1.9
+    { boulderbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_boulder_pieces/all_boulder_pieces.group
+      5 ANIMS = exporteddata/objects/all_boulder_pieces/all_boulder_pieces_apkg.group
+    }
+    { directanimmotion
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template boulderbrain base=brain size=0x1a0
+template boulderexplosion base=entcomposite size=0x360
+  { boulderexplosion
+    1 explosionbrain
+    1 corporeal
+    1 directanimmotion
+    1 collision
+    5 ENTCOLFLG = 1233
+    5 ROLE = hostile explosion !
+    { explosionbrain
+      5 VFARUPD = 1
+      5 DURATION=4.0
+      5 DAMAGE=0.0
+      5 CREATESSPRITE = 0
+      5 CREATESSHELL = 0
+      5 CREATESPARTICLES = 1
+      5 ANIM = tt_trebuchet_boulder_smashed_action.anim
+      5 PARTICLETYPE=1
+    }
+    { directanimmotion
+    }
+    { corporeal
+      5 ANIMS = exporteddata/objects/tt_trebuchet_boulder_smashed/tt_trebuchet_boulder_smashed_action_apkg.group
+      5 RES = exporteddata/objects/tt_trebuchet_boulder_smashed/tt_trebuchet_boulder_smashed.group
+    }
+  }
+template bouldermetal base=agent size=0x380
+  { bouldermetal
+    1 bouldermetalbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 16778432
+    5 FARUPD=1
+    5 VFARUPD = 1
+    5 FARREND = 1
+    5 VFARREND = 1
+    { bouldermetalbrain
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 FARREND = 1
+      5 VFARREND = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/ch_boulder_metal/ch_boulder_metal.group
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 FARREND = 1
+      5 VFARREND = 1
+    }
+    { soundplayer
+    }
+  }
+template bouldermetalbrain base=brain size=0x1b0
+template boulderrolling base=agent size=0x380
+  { boulderrolling
+    1 boulderrollingbrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    5 FARUPD=1
+    5 VFARUPD = 1
+    5 FARREND = 1
+    5 VFARREND = 1
+    5 ENTCOLFLG = 1216
+    { boulderrollingbrain
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 FARREND = 1
+      5 VFARREND = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_boulder_pieces/all_boulder_pieces.group
+      5 ANIMS = exporteddata/objects/all_boulder_pieces/all_boulder_pieces_apkg.group
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 FARREND = 1
+      5 VFARREND = 1
+    }
+    { directanimmotion
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 FARREND = 1
+      5 VFARREND = 1
+    }
+    { soundplayer
+    }
+  }
+template boulderrollingbrain base=brain size=0x1b0
+template brain base=entunit size=0x150
+template bridge base=agent size=0x380
+  { bridge
+    1 bridgebrain
+    1 corporeal
+    5 ENTCOLFLG=1024
+    { bridgebrain
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { corporeal
+      5 VFARREND=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 FARUPD=1
+      5 RES = exporteddata/objects/zl_lair_bridge/zl_lair_bridge.group
+    }
+  }
+template bridgebrain base=brain size=0x160
+template bustpillar base=agent size=0x380
+  { bustpillar
+    1 bustpillarbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG=1217
+    { bustpillarbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sv_bust_pillar/sv_bust_pillar.group
+      5 ANIMS = exporteddata/objects/sv_bust_pillar/sv_bust_pillar_apkg.group
+    }
+    { directanimmotion
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template bustpillarbrain base=brain size=0x150
+template cablecar base=agent size=0x380
+  { cablecar
+    1 cablecarbrain
+    1 corporeal
+    1 directmotion
+    1 collision
+    5 ENTCOLFLG=33984
+    5 COLDATARAD=5.0
+    5 UPDPRI = 40
+    { cablecarbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/ef_cable_car/ef_cable_car.group
+    }
+    { directmotion
+    }
+    { collision
+    }
+  }
+template cablecarbrain base=brain size=0x190
+template camera base=entunit size=0x280
+template cannonball base=entcomposite size=0x360
+  { cannonball
+    1 cannonballbrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG = 1233
+    5 ROLE=hostile !
+    { cannonballbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_canonball/all_canonball.group
+    }
+    { collision
+    }
+  }
+template cannonballbrain base=brain size=0x1b0
+template cannonmortar base=agent size=0x380
+  { cannonmortar
+    1 cannonmortarbrain
+    1 corporeal
+    1 soundplayer
+    { cannonmortarbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_canon_mortar/all_canon_mortar.group
+    }
+    { soundplayer
+    }
+  }
+template cannonmortarbrain base=brain size=0x220
+template cannonontrack base=agent size=0x380
+  { cannonontrack
+    1 cannonontrackbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    { cannonontrackbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sd_cannon_on_track/sd_cannon_on_track.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template cannonontrackbrain base=brain size=0x230
+template carnivalskeleton1 base=entcomposite size=0x380
+  { carnivalskeleton1
+    1 minigamelauncherbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 minigamecamera
+    5 ENTCOLFLG=66753
+    { minigamelauncherbrain
+      5 SPEECH = e_00109_cs
+      5 TEXT = play_mystery
+      5 REALM = -1
+      5 VARIATION = 0
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/carnival_skeleton_2/carnival_skeleton_2_apkg.group
+      5 RES = exporteddata/characters/carnival_skeleton_1/carnival_skeleton_1.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { minigamecamera
+      5 STARTACTIVE= 1
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 BASISYOFFSET= 0.0
+      5 HOTSPOT= 1
+      5 PLUGIN=<MINIGAME_FIXED>
+      5 DEFPLUGIN= 7
+    }
+    { soundplayer
+    }
+  }
+template carnivalskeleton2 base=entcomposite size=0x380
+  { carnivalskeleton2
+    1 minigamelauncherbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 minigamecamera
+    5 ENTCOLFLG=66753
+    { minigamelauncherbrain
+      5 SPEECH = e_00106_cs
+      5 TEXT = play_trebuchet
+      5 REALM = 49
+      5 VARIATION = 0
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/carnival_skeleton_2/carnival_skeleton_2_apkg.group
+      5 RES = exporteddata/characters/carnival_skeleton_2/carnival_skeleton_2.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { minigamecamera
+      5 STARTACTIVE= 1
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 BASISYOFFSET= 0.0
+      5 HOTSPOT= 1
+      5 PLUGIN=<MINIGAME_FIXED>
+      5 DEFPLUGIN= 7
+    }
+    { soundplayer
+    }
+  }
+template carnivalskeleton3 base=entcomposite size=0x380
+  { carnivalskeleton3
+    1 minigamelauncherbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 minigamecamera
+    5 ENTCOLFLG=66753
+    { minigamelauncherbrain
+      5 SPEECH = e_00107_cs
+      5 TEXT = play_whack
+      5 REALM = 51
+      5 VARIATION = 0
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/carnival_skeleton_2/carnival_skeleton_2_apkg.group
+      5 RES = exporteddata/characters/carnival_skeleton_1/carnival_skeleton_1.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { minigamecamera
+      5 STARTACTIVE= 1
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 BASISYOFFSET= 0.0
+      5 HOTSPOT= 1
+      5 PLUGIN=<MINIGAME_FIXED>
+      5 DEFPLUGIN= 7
+    }
+    { soundplayer
+    }
+  }
+template carnivalskeleton4 base=entcomposite size=0x380
+  { carnivalskeleton4
+    1 minigamelauncherbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 minigamecamera
+    5 ENTCOLFLG=66753
+    { minigamelauncherbrain
+      5 SPEECH = e_00105_cs
+      5 TEXT = play_pit
+      5 REALM = 47
+      5 VARIATION = 0
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/carnival_skeleton_2/carnival_skeleton_2_apkg.group
+      5 RES = exporteddata/characters/carnival_skeleton_2/carnival_skeleton_2.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { minigamecamera
+      5 STARTACTIVE= 1
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 BASISYOFFSET= 0.0
+      5 HOTSPOT= 1
+      5 PLUGIN=<MINIGAME_FIXED>
+      5 DEFPLUGIN= 7
+    }
+    { soundplayer
+    }
+  }
+template cartpushable base=agent size=0x380
+  { cartpushable
+    1 cartpushablebrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=67108864
+    5 XZRAD = 1.5
+    { cartpushablebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sf_cart_pushable/sf_cart_pushable.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template cartpushablebrain base=brain size=0x1d0
+template castlefarmer base=agent size=0x380
+  { castlefarmer
+    1 castlefarmerbrain
+    1 collision
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ROLE = obstacle !
+    5 XZRAD = 0.5
+    5 ENTCOLFLG = 67110081
+    { castlefarmerbrain
+      5 DROPEVENT = drop_farmers
+    }
+    { collision
+    }
+    { corporeal
+      5 RES = exporteddata/characters/farmer/farmer.group
+      5 ANIMS = exporteddata/characters/farmer/farmer_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template castlefarmerbrain base=brain size=0x160
+template chalicepickup base=pickup size=0x360
+  { chalicepickup
+    1 chalicepickupbrain
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG = 66769
+    { chalicepickupbrain
+      5 NAME = chalice
+      5 QUANTITY = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_chalice/all_chalice.group
+    }
+  }
+template chalicepickupbrain base=pickupbrain size=0x350
+template chalicetrigger base=entcomposite size=0x360
+  { chalicetrigger
+    1 chalicetriggerbrain
+    { chalicetriggerbrain
+    }
+  }
+template chalicetriggerbrain base=brain size=0x170
+template chariot base=entcomposite size=0x360
+  { chariot
+    1 chariotbrain
+    1 collision
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ROLE = hostile !
+    5 XZRAD = 0.1
+    5 MIDREND = 1
+    5 FARREND = 1
+    5 VFARREND = 1
+    5 MIDUPD = 1
+    5 FARUPD = 1
+    5 VFARUPD = 1
+    5 ENTCOLFLG = 65541
+    { chariotbrain
+      5 ROLLEVENT = rollchariot !
+      5 CRASHEVENT = fort_door_open !
+    }
+    { collision
+    }
+    { corporeal
+      5 RES = exporteddata/objects/ad_chariot/ad_chariot.group
+      5 ANIMS = exporteddata/objects/ad_chariot/ad_chariot_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template chariotbrain base=brain size=0x1b0
+template chest base=agent size=0x380
+  { chest
+    1 chestbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG=67175617
+    5 XZRAD = 0.75
+    { chestbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_chest/all_chest.group
+      5 ANIMS = exporteddata/objects/all_chest/all_chest_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template chestbombarrow base=entcomposite size=0x360
+  { chestbombarrow
+    1 projectilebrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 67110097
+    5 XZRAD = 1.5
+    { projectilebrain
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 EXPLOSION = chestbombexplosion
+      5 TRAIL = magiclongbowtrail
+    }
+    { corporeal
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 RES = exporteddata/objects/af_archery_arrow/af_archery_arrow.group
+    }
+  }
+template chestbombexplosion base=entcomposite size=0x360
+  { chestbombexplosion
+    1 explosionbrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG = 67110097
+    5 ROLE = hostile explosion !
+    { explosionbrain
+      5 VFARUPD = 1
+      5 DAMAGE=120.0
+      5 DAMAGETYPE=lightning
+      5 MESHNAME=sfx_miasma.group
+      5 RADIUS=14.0
+      5 DURATION=1.0
+    }
+    { corporeal
+    }
+  }
+template chestbrain base=brain size=0x150
+template chicken base=agent size=0x380
+  { chicken
+    1 chickenbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    { chickenbrain
+      5 SIGHTRANGE = 10.0
+      5 SIGHTCONE = 160.0
+      5 USENAVMESH = 1
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 DEADUPD=1
+    }
+    { corporeal
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 DEADUPD=1
+      5 ANIMS = exporteddata/characters/chicken/chicken_apkg.group
+      5 RES = exporteddata/characters/chicken/chicken.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 DEADUPD=1
+      5 ACC = 10.5
+      5 DEC = 10.5
+      5 TRSTAT = 360.0
+      5 TRMOV = 120.0
+    }
+    { soundplayer
+    }
+    { collision
+      5 STATE=1
+    }
+  }
+template chickenbrain base=herdedbrain size=0x520
+template cloudbase base=entcomposite size=0x360
+  { cloudbase
+    1 cloudbasebrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { cloudbasebrain
+      5 ROTSPDY = 1.0
+    }
+    { corporeal
+      5 RES = exporteddata/objects/hh_cloud_base/hh_cloud_base.group
+      5 RADIUS = 100.0
+    }
+  }
+template cloudbasebrain base=brain size=0x150
+template coffinburster base=entcomposite size=0x360
+  { coffinburster
+    1 coffinbursterbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG = 1233
+    { coffinbursterbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_coffin_burster/all_coffin_burster.group
+      5 ANIMS = exporteddata/objects/all_coffin_burster/all_coffin_burster_open_apkg.group
+    }
+    { directanimmotion
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template coffinbursterbrain base=brain size=0x200
+template coffinfloating base=entcomposite size=0x360
+  { coffinfloating
+    1 coffinfloatingbrain
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG=33985
+    5 COLDATARAD=2.0
+    5 UPDPRI = 40
+    { coffinfloatingbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_coffin_floating/all_coffin_floating.group
+    }
+    { soundplayer
+    }
+  }
+template coffinfloatingbrain base=brain size=0x190
+template coffintest base=agent size=0x380
+  { coffintest
+    1 coffintestbrain
+    1 corporeal
+    1 directmotion
+    5 ENTCOLFLG = 1
+    { coffintestbrain
+      5 USENAVMESH = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/coffin_closed/coffin_closed.group
+    }
+    { directmotion
+    }
+  }
+template coffintestbrain base=brain size=0x150
+template colcapture base=entcomposite size=0x360
+  { colcapture
+  }
+template collision base=entunit size=0x3c0
+template combinefield base=agent size=0x380
+  { combinefield
+    1 combinefieldbrain
+    1 corporeal
+    5 ENTCOLFLG=1024
+    { combinefieldbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sf_combine_field/sf_combine_field.group
+    }
+  }
+template combinefieldbrain base=brain size=0x1a0
+template combineharvesterbrain base=brain size=0x320
+template combinelift base=agent size=0x380
+  { combinelift
+    1 combineliftbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1041
+    { combineliftbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sf_combine_harvester_lift/sf_combine_harvester_lift.group
+    }
+    { soundplayer
+    }
+    { collision
+    }
+  }
+template combineliftbrain base=brain size=0x1c0
+template cookedchickenpickup base=entcomposite size=0x360
+  { cookedchickenpickup
+    1 pickupbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { pickupbrain
+      5 NAME = health_points
+      5 QUANTITY = 25
+      5 AXIS = 1
+      5 SCALE = 1.0
+      5 VARIATION = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_cooked_chicken/all_cooked_chicken.group
+    }
+  }
+template cornbeam base=agent size=0x380
+  { cornbeam
+    1 cornbeambrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=1024
+    { cornbeambrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sf_corn_beam/sf_corn_beam.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template cornbeambrain base=brain size=0x190
+template cornroller base=agent size=0x380
+  { cornroller
+    1 cornrollerbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=1024
+    { cornrollerbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sf_corn_roller/sf_corn_roller.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template cornrollerbrain base=brain size=0x180
+template corporeal base=entunit size=0x2e0
+template crossbowtrail base=entcomposite size=0x360
+  { crossbowtrail
+    1 trailbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { trailbrain
+      5 TRAILSPARTICLES = 0
+      5 TRAILSSURFACE = 1
+      5 TRAILSSPRITE = 0
+      5 FARUPD = 1
+      5 VFARUPD = 1
+    }
+  }
+template crucifixholder base=agent size=0x380
+  { crucifixholder
+    1 crucifixholderbrain
+    1 corporeal
+    5 ENTCOLFLG=1217
+    { crucifixholderbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_crucifix/all_crucifix.group
+    }
+  }
+template crucifixholderbrain base=brain size=0x150
+template crystalwall base=agent size=0x380
+  { crystalwall
+    1 crystalwallbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG=66753
+    5 INITHLTH = 3000
+    { crystalwallbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/di_crystal_wall/di_crystal_wall.group
+      5 ANIMS = exporteddata/objects/di_crystal_wall/di_crystal_wall_apkg.group
+    }
+    { directanimmotion
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template crystalwallbrain base=brain size=0x160
+template cutscenetriggerbrain base=stdbrain size=0x170
+template dananimator base=entunit size=0x1090
+template danbrain base=brain size=0x1900
+template dancamera base=camera size=0x280
+template dancollision base=collision size=0x4a0
+template dancorporeal base=corporeal size=0x2e0
+template danmotion base=motion size=0x550
+template dansarmy base=agent size=0x380
+  { dansarmy
+    1 dansarmybrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ROLE = friend !
+    5 INITHLTH = 300
+    5 XZRAD = 0.7
+    { dansarmybrain
+      5 USENAVMESH = 1
+      5 USENAVMESHASTARGET=1
+      5 SIGHTRANGE = 30.0
+      5 SIGHTCONE = 360.0
+      5 CLOSEATTACKD0 = 1.6
+      5 USEHURTFLASH = 0
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/dans_army/dans_army_apkg.group
+      5 RES = exporteddata/characters/dans_army/dans_army.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template dansarmybrain base=stdbrain size=0x4f0
+template deadfish base=agent size=0x380
+  { deadfish
+    1 deadfishbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 1
+    { deadfishbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/pg_dead_fish_blue/pg_dead_fish_blue.group
+      5 ANIMS = exporteddata/objects/pg_dead_fish_blue/pg_dead_fish_blue_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template deadfishbrain base=brain size=0x150
+template deathboat base=entcomposite size=0x360
+  { deathboat
+    1 deathboatbrain
+    1 collision
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ROLE = neutral !
+    5 XZRAD = 3.0
+    5 COLDATARAD = 5.0
+    5 ENTCOLFLG = 99520
+    { deathboatbrain
+      5 BOATEVENT = deathboat_released
+    }
+    { collision
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_death_boat/all_death_boat.group
+      5 ANIMS = exporteddata/objects/all_death_boat/all_death_boat_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template deathboatbrain base=brain size=0x190
+template deathpart2 base=agent size=0x380
+  { deathpart2
+    1 deathpart2brain
+    1 collision
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 XZRAD = 1.5
+    5 ROLE = obstacle !
+    5 ENTCOLFLG = 5
+    { deathpart2brain
+      5 BOATEVENT = deathboat_released !
+      5 PARTEVENT = used_death_mechanical_part !
+      5 RGCUTSCENEEVENT = rgdeathcutscene !
+      5 ADINTROEVENT = adintrocutscene !
+    }
+    { collision
+    }
+    { corporeal
+      5 RES = exporteddata/characters/death/death.group
+      5 ANIMS = exporteddata/characters/death/death_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template deathpart2brain base=brain size=0x1b0
+template directmotion base=entunit size=0x1b0
+template docksbell base=agent size=0x380
+  { docksbell
+    1 docksbellbrain
+    1 collision
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 XZRAD = 0.75
+    5 ROLE = obstacle !
+    5 ENTCOLFLG = 1217
+    { docksbellbrain
+      5 BELLEVENT = bell_ringing
+    }
+    { collision
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sd_bell/sd_bell.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template docksbellbrain base=brain size=0x180
+template doorbrain base=brain size=0x1b0
+template dragonfloor base=agent size=0x380
+  { dragonfloor
+    1 dragonfloorbrain
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG = 33985
+    5 COLDATARAD = 21.0
+    5 UPDPRI = 40
+    { dragonfloorbrain
+    }
+    { corporeal
+    }
+    { soundplayer
+    }
+  }
+template dragonfloorbrain base=brain size=0x160
+template dragonking base=agent size=0x380
+  { dragonking
+    1 dragonkingbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 SURG = exporteddata/characters/dragonking/dragonking_texture.group !
+    5 INITHLTH=1200
+    5 XZRAD=1.5
+    5 ROLE = hostile !
+    5 ENTCOLFLG = 1217
+    5 SURFTYPE = 16
+    { dragonkingbrain
+      5 USENAVMESH = 0
+    }
+    { corporeal
+      5 RES = exporteddata/characters/dragonking/dragonking.group
+      5 ANIMS = exporteddata/characters/dragonking/dragonking_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 FSPD = 4.0
+    }
+    { soundplayer
+    }
+  }
+template dragonkingbrain base=brain size=0x660
+template dragonkinghead base=agent size=0x380
+  { dragonkinghead
+    1 dragonkingheadbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 INITHLTH=160
+    5 SURG = exporteddata/characters/dragonking/dragonking_texture.group !
+    5 ENTCOLFLG = 66752
+    { dragonkingheadbrain
+    }
+    { corporeal
+      5 RES = exporteddata/characters/dragonking_neck/dragonking_neck.group
+      5 ANIMS = exporteddata/characters/dragonking_neck/dragonking_neck_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template dragonkingheadbrain base=brain size=0x4e0
+template dragonplatform base=agent size=0x380
+  { dragonplatform
+    1 dragonplatformbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 33985
+    5 COLDATARAD = 5.0
+    5 UPDPRI = 40
+    { dragonplatformbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/di_dragon_platform_1/di_dragon_platform_1.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template dragonplatformbrain base=brain size=0x1b0
+template dragontoad base=agent size=0x380
+  { dragontoad
+    1 dragontoadbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ROLE = hostile !
+    5 INITHLTH = 350
+    5 XZRAD = 1.2
+    5 SURG = exporteddata/objects/sfx_dragontoad_spit/sfx_dragontoad_spit.group !
+    5 ENTCOLFLG = 1
+    5 SURFTYPE = 16
+    { dragontoadbrain
+      5 WAITPROB = 0.3
+      5 WAITTIME = 5.0
+      5 CLOSEATTACKCNT = 1
+      5 RANGEATTACKCNT = 1
+      5 SIGHTRANGE = 20.0
+      5 SIGHTCONE = 360.0
+      5 RANGEATTACKD0 = 10.0
+      5 CLOSEATTACKD0 = 1.8
+      5 RUN2ATKPOS = 0
+      5 RETREATD0 = 0.0
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/dragontoad/dragontoad_apkg.group
+      5 RES = exporteddata/characters/dragontoad/dragontoad.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 GRAVITY = -30.0
+    }
+    { soundplayer
+    }
+  }
+template dragontoadbrain base=stdbrain size=0x690
+template dragontoadspit base=entcomposite size=0x360
+  { dragontoadspit
+    1 dragontoadspitbrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG = 1233
+    5 ROLE = hostile projectile !
+    { dragontoadspitbrain
+      5 TRAIL = dragontoadtrail 
+      5 EXPLOSION = fireexplosiondragon
+      5 DAMAGE = 40.0
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sfx_dragontoad_spit/sfx_dragontoad_spit.group
+    }
+  }
+template dragontoadspitbrain base=projectilebrain size=0x200
+template duckshoot base=minigame size=0x520
+  { duckshoot
+    1 collision
+    5 ENTCOLFLG = 1
+  }
+template eagle base=agent size=0x380
+  { eagle
+    1 eaglebrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 66753
+    { eaglebrain
+    }
+    { corporeal
+      5 RES = exporteddata/characters/giant_eagle/giant_eagle.group
+      5 ANIMS = exporteddata/characters/giant_eagle/giant_eagle_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template eaglebrain base=brain size=0x1a0
+template earthrunehand base=agent size=0x380
+  { earthrunehand
+    1 runehandbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 66769
+    { runehandbrain
+      5 RUNE=0
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_rune_hand/all_rune_hand.group
+      5 ANIMS = exporteddata/objects/all_rune_hand/all_rune_hand_apkg.group
+    }
+    { directanimmotion
+      5 SIMPLE = 1
+    }
+    { soundplayer
+    }
+  }
+template efbossman base=entcomposite size=0x360
+  { efbossman
+    1 efbossmanbrain
+    5 ENTCOLFLG = 1233
+    { efbossmanbrain
+    }
+  }
+template efbossmanbrain base=brain size=0x180
+template eggbrain base=brain size=0x150
+template exittarget base=entcomposite size=0x360
+  { exittarget
+    1 exittargetbrain
+    1 corporeal
+    { exittargetbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_rune_chaos/all_rune_chaos.group
+    }
+  }
+template exittargetbrain base=entcomposite size=0x160
+template explosion base=entcomposite size=0x360
+  { explosion
+    1 explosionbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    5 ROLE = hostile explosion !
+    { explosionbrain
+      5 VFARUPD = 1
+      5 DAMAGE=0.0
+      5 MESHNAME=sfx_smash_hammer.group
+    }
+    { corporeal
+    }
+    { soundplayer
+    }
+  }
+template explosionbrain base=brain size=0x590
+template fairies base=agent size=0x380
+  { fairies
+    1 fairiesbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG = 1216
+    { fairiesbrain
+      5 SIGHTRANGE = 15.0
+      5 SIGHTCONE = 360.0
+      5 WALKSPEED = 3.0
+      5 RUNSPEED = 9.0
+      5 BLOODBITS = 1
+    }
+    { corporeal
+      5 RES = exporteddata/characters/faeries/faeries.group
+      5 ANIMS = exporteddata/characters/faeries/faeries_apkg.group
+    }
+    { directanimmotion
+      5 GRAVITY = 0.0
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template fairiesbrain base=stdbrain size=0x540
+template fairynet base=entcomposite size=0x360
+  { fairynet
+    1 fairynetbrain
+    1 corporeal
+    1 collision
+    { fairynetbrain
+    }
+    { corporeal
+      5 RES = exporteddata/object/all_butterfly_net/all_butterfly_net.group
+    }
+    { collision
+    }
+  }
+template fairynetbrain base=brain size=0x160
+template fallingcrystalsbrain base=brain size=0x160
+template farmerevents base=agent size=0x380
+  { farmerevents
+    1 farmereventsbrain
+    5 ENTCOLFLG=1233
+    { farmereventsbrain
+    }
+  }
+template farmereventsbrain base=brain size=0x170
+template fazgul base=agent size=0x380
+  { fazgul
+    1 fazgulbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ROLE = hostile !
+    5 INITHLTH = 300
+    5 XZRAD = 0.7
+    { fazgulbrain
+      5 USENAVMESH = 1
+      5 USENAVMESHASTARGET=1
+      5 SIGHTRANGE = 30.0
+      5 SIGHTCONE = 360.0
+      5 CLOSEATTACKD0 = 1.6
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/fazgul/fazgul_apkg.group
+      5 RES = exporteddata/characters/fazgul/fazgul.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template fazgulbrain base=stdbrain size=0x4e0
+template firebodyeffect base=entunit size=0x270
+template fireeffect base=entunit size=0x340
+template fireignitable base=agent size=0x380
+  { fireignitable
+    1 fireignitablebrain
+    1 corporeal
+    1 collision
+    1 fireeffect
+    1 soundplayer
+    5 SURG = exporteddata/objects/all_fire_ignitor_wood/all_fire_ignitor_wood_texture.group ! 
+    5 ENTCOLFLG = 1233
+    { fireignitablebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_fire_ignitor_wood/all_fire_ignitor_wood.group
+    }
+    { collision
+      5 TESTATT = 1
+    }
+    { fireeffect
+      5 MAXSCALE = 3.0
+      5 MAXTTL = 1.5
+      5 SPEED = 0.05
+      5 HILITE = 0
+      5 SPRITECNT = 20
+      5 TEXTURE = fire2_abe.flip
+    }
+  }
+template fireignitablebrain base=brain size=0x150
+template fireignitor base=agent size=0x380
+  { fireignitor
+    1 corporeal
+    1 fireeffect
+    1 soundplayer
+    { corporeal
+      5 RES = exporteddata/objects/all_fire_ignitor_wood/all_fire_ignitor_wood.group
+    }
+    { fireeffect
+      5 SPREAD = 0.5f
+      5 MAXSCALE = 2.0
+      5 MAXTTL = 1.0
+      5 SPEED = 0.01
+      5 HILITE = 0
+      5 SPRITECNT = 40
+      5 TEXTURE = fire2_abe.flip
+      5 YOFF = 1.5
+    }
+    { soundplayer
+    }
+  }
+template firejet base=agent size=0x380
+  { firejet
+    1 firejetbrain
+    1 soundplayer
+    5 SURG = exporteddata/objects/hr_flame_jet/hr_flame_jet.group ! 
+    5 RENDERCULL = firejetbrain
+    5 XZRAD = 0.2
+    { firejetbrain
+    }
+    { soundplayer
+    }
+  }
+template firejetbrain base=brain size=0x4a0
+template flower base=agent size=0x380
+  { flower
+    1 corporeal
+    { corporeal
+      5 RES = exporteddata/objects/pg_flower_01/pg_flower_01.group
+    }
+  }
+template flyingdemonettebrain base=brain size=0x1b0
+template forceemitter base=agent size=0x380
+  { forceemitter
+    1 forceemitterbrain
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG=1024
+    { forceemitterbrain
+    }
+    { corporeal
+    }
+  }
+template forceemitterbrain base=brain size=0x4d0
+template forestwitch base=agent size=0x380
+  { forestwitch
+    1 forestwitchbrain
+    { forestwitchbrain
+    }
+  }
+template forestwitchbrain base=brain size=0x150
+template forge base=agent size=0x380
+  { forge
+    1 forgebrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=1217
+    { forgebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sv_furnace/sv_furnace.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template forgebrain base=brain size=0x420
+template fountainpickup base=pickup size=0x360
+  { fountainpickup
+    1 fountainpickupbrain
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { fountainpickupbrain
+      5 NAME = health_fountain
+      5 QUANTITY = 1000
+      5 FLOW = 20
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_health_bottle/all_health_bottle.group
+      5 MODELHIDDEN = 1
+    }
+    { soundplayer
+    }
+  }
+template fountainpickupbrain base=pickupbrain size=0x6d0
+template frontendentity base=entcomposite size=0x370
+  { frontendentity
+    1 minigamecamera
+    5 ENTCOLFLG = 1233
+    { minigamecamera
+      5 STARTACTIVE= 1
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 BASISYOFFSET= 0.0
+      5 HOTSPOT= 1
+      5 PLUGIN=<MINIGAME_FIXED_SPLINE>
+      5 DEFPLUGIN= 8
+    }
+    5 VFARUPD= 1
+  }
+template gargoyle base=agent size=0x4a0
+  { gargoyle
+    1 gargoylebrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 minigamecamera
+    5 ENTCOLFLG=67175617
+    5 SPEECH = e_00048_ga
+    5 SHOPNOTHELP = 0
+    5 INITHLTH = 400
+    { gargoylebrain
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/gargoyle_help/gargoyle_help_apkg.group
+      5 RES = exporteddata/characters/gargoyle_help/gargoyle_help.group
+    }
+    { directanimmotion
+      5 SIMPLE = 1
+    }
+    { minigamecamera
+      5 STARTACTIVE= 1
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 BASISYOFFSET= 0.0
+      5 HOTSPOT= 1
+      5 PLUGIN=<MINIGAME_FIXED>
+      5 DEFPLUGIN= 7
+    }
+    { soundplayer
+    }
+  }
+template gargoylebrain base=brain size=0x150
+template gargoyleshop base=agent size=0x4a0
+  { gargoyleshop
+    1 gargoylebrain
+    1 corporeal
+    1 directanimmotion
+    1 collision
+    1 minigamecamera
+    1 soundplayer
+    5 ENTCOLFLG=66753
+    5 SPEECH = e_00570_sg
+    5 SHOPNOTHELP = 1
+    5 HEALTHSELLER = 0
+    5 INITHLTH = 400
+    { gargoylebrain
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/gargoyle_help/gargoyle_help_apkg.group
+      5 RES = exporteddata/characters/gargoyle_shop/gargoyle_shop.group
+    }
+    { directanimmotion
+    }
+    { minigamecamera
+      5 STARTACTIVE= 1
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 BASISYOFFSET= 0.0
+      5 HOTSPOT= 1
+      5 PLUGIN=<MINIGAME_FIXED>
+      5 DEFPLUGIN= 7
+    }
+  }
+template generator base=agent size=0x380
+  { generator
+    1 generatorbrain
+    5 ENTCOLFLG = 1024
+    { generatorbrain
+    }
+  }
+template generatorbrain base=brain size=0x310
+template ghost base=agent size=0x380
+  { ghost
+    1 ghostbrain
+    1 corporeal
+    1 directanimmotion
+    5 ENTCOLFLG=1217
+    { ghostbrain
+    }
+    { corporeal
+      5 RES = exporteddata/characters/fe_ghost_a/fe_ghost_a.group
+      5 ANIMS = exporteddata/characters/fe_ghost_a/fe_ghost_a_apkg.group
+      5 RADIUS = 100.0
+    }
+    { directanimmotion
+    }
+  }
+template ghostbrain base=brain size=0x150
+template ghostweapon base=agent size=0x380
+  { ghostweapon
+    1 ghostweaponbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { ghostweaponbrain
+    }
+    { corporeal
+    }
+  }
+template ghostweaponbrain base=brain size=0x150
+template ghoul base=agent size=0x380
+  { ghoul
+    1 ghoulbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 firebodyeffect
+    5 INITHLTH=300
+    5 ENTCOLFLG = 1216
+    5 ROLE = hostile !
+    5 SURFTYPE = 16
+    { ghoulbrain
+      5 BURNAMOUNT=100.0
+      5 SIGHTRANGE = 10.0
+      5 SIGHTCONE = 300.0
+      5 USENAVMESH = 1
+      5 CLOSEATTACKD0 = 0.0
+      5 WAITPROB=0.3
+      5 WAITTIME=5.0
+      5 RANGEATTACKCNT = 1
+      5 RANGEATTACKD0 = 6.0
+      5 RANGEREP0 = 1
+      5 RANGEDEL0 = 0.5
+      5 RETREATD0 = 4.0
+      5 FLEECHK=3
+      5 FLEEMIN=10
+      5 FLEEMAX=15
+      5 BLOODBITS = 1
+    }
+    { corporeal
+      5 RES = exporteddata/characters/ghoul/ghoul.group
+      5 ANIMS = exporteddata/characters/ghoul/ghoul_apkg.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template ghoulbrain base=stdbrain size=0x500
+template ghoulshoot base=minigame size=0x4d0
+  { ghoulshoot
+    5 ENTCOLFLG = 1233
+  }
+template ghoultarget base=agent size=0x380
+  { ghoultarget
+    1 ghoultargetbrain
+    1 corporeal
+    1 directanimmotion
+    1 collision
+    1 soundplayer
+    5 INITHLTH=600
+    5 ENTCOLFLG = 1216
+    5 ROLE = hostile !
+    5 SURFTYPE = 16
+    { ghoultargetbrain
+    }
+    { corporeal
+      5 RES = exporteddata/characters/ghoul/ghoul.group
+      5 ANIMS = exporteddata/characters/ghoul/ghoul_apkg.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+    }
+    { directanimmotion
+      5 ACC = 20.0
+      5 DEC = 20.0
+      5 TRSTAT = 180.0
+      5 TRMOV = 120.0
+    }
+    { soundplayer
+    }
+  }
+template ghoultargetbrain base=brain size=0x1e0
+template ghoultargettrail base=entcomposite size=0x360
+  { ghoultargettrail
+    1 trailbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { trailbrain
+      5 TRAILSPARTICLES = 0
+      5 TRAILSSURFACE = 0
+      5 TRAILSSPRITE = 1
+      5 PARTICLECOLOURSTART = 0.5,0.5,0.5
+      5 PARTICLECOLOUREND = 0.75,0.75,0.75
+      5 SPRITECOLOUR = 1.0,0.26,0.0
+      5 TRAILSPRITECOUNT = 15
+      5 SPRITESIZE = 0.425
+      5 SPRITE2 = 1
+      5 SPRITE2SIZE = 0.375
+      5 ADDNOTBLENDPARTICLES = 1
+      5 FARUPD = 1
+      5 VFARUPD = 1
+    }
+  }
+template goldcoinpickup base=pickup size=0x360
+  { goldcoinpickup
+    1 goldpickupbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    5 SCALE = 0.25
+    { goldpickupbrain
+      5 NAME = gold
+      5 QUANTITY = 1
+      5 DENOMINATION = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_coin/all_coin.group
+    }
+  }
+template goldpickup base=pickup size=0x360
+  { goldpickup
+    1 goldpickupbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { goldpickupbrain
+      5 NAME = gold
+      5 QUANTITY = 50
+      5 DENOMINATION = 5
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_gold/all_gold.group
+    }
+  }
+template goldpickupbrain base=pickupbrain size=0x350
+template golem base=agent size=0x380
+  { golem
+    1 golembrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 XZRAD=1.8
+    5 HEIGHT = 12.0
+    5 ROLE = hostile !
+    5 INITHLTH=1000
+    5 ENTCOLFLG = 2097152
+    5 SURG = exporteddata/characters/dragonking/dragonking_texture.group !
+    5 SURFTYPE = 3
+    { golembrain
+      5 USENAVMESH = 1
+      5 NOADJATTRANGE=1
+      5 SIGHTRANGE = 30.0
+      5 SIGHTCONE = 360.0
+      5 CLOSEATTACKCNT = 0
+      5 RANGEATTACKCNT = 1
+      5 RANGEATTACKD0 = 5.0
+      5 RANGEREP0 = 3
+      5 RANGEDEL0 = 3.0
+      5 WAITTIME=4.0
+      5 WAITPROB=0.33
+      5 CHKNVULN=0
+      5 BLOODTEXTURE = spark_abe.psm
+      5 BLOODSCALE = 0.3
+      5 BLOODLIFE = 0.5
+      5 BLOODBITS = 1
+    }
+    { corporeal
+      5 RES = exporteddata/characters/golem/golem.group
+      5 ANIMS = exporteddata/characters/golem/golem_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template golembrain base=stdbrain size=0x7c0
+template golemplinth base=agent size=0x380
+  { golemplinth
+    1 golemplinthbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=33985
+    5 COLDATARAD=2.0
+    5 UPDPRI = 40
+    { golemplinthbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/hr_golem_plinth/hr_golem_plinth.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template golemplinthbrain base=brain size=0x160
+template gravediggable base=agent size=0x380
+  { gravediggable
+    1 gravediggablebrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG=33984
+    5 COLDATARAD=8.0
+    5 UPDPRI = 40
+    { gravediggablebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_grave_diggable/all_grave_diggable.group
+    }
+  }
+template gravediggablebrain base=brain size=0x470
+template harbourmaster base=entcomposite size=0x360
+  { harbourmaster
+    1 harbourmasterbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 XZRAD = 1.0
+    5 ROLE = obstacle !
+    5 ENTCOLFLG = 65541
+    { harbourmasterbrain
+      5 BELLEVENT = bell_ringing !
+    }
+    { corporeal
+      5 RES = exporteddata/characters/harbour_master/harbour_master.group
+      5 ANIMS = exporteddata/characters/harbour_master/harbour_master_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template harbourmasterbrain base=brain size=0x160
+template haybale base=agent size=0x380
+  { haybale
+    1 haybalebrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=32785
+    5 COLDATARAD=2.0
+    5 UPDPRI = 40
+    { haybalebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_haybale/all_haybale.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template haybalebrain base=brain size=0x190
+template haymonster base=agent size=0x380
+  { haymonster
+    1 haymonsterbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 firebodyeffect
+    5 XZRAD = 1.0
+    5 ROLE = hostile !
+    5 INITHLTH = 240
+    { haymonsterbrain
+      5 USEBURN = 1
+      5 BURNAMOUNT = 200.0
+      5 CLOSEATTACKCNT = 2
+      5 CLOSEATTACKD0 = 5.0
+      5 CLOSEATTACKD1 = 5.0
+      5 CLOSEATTACKP0 = 0.5
+      5 CLOSEATTACKP1 = 0.5
+      5 SIGHTRANGE = 30.0
+      5 WAITPROB = 0.5
+      5 BLOODTEXTURE = haystack_parts_abe.psm
+      5 BLOODYOFFSET = -1.0
+      5 BLOODSCALE = 0.3
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/hay_monster/hay_monster_apkg.group
+      5 RES = exporteddata/characters/hay_monster/hay_monster.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = chest
+    }
+  }
+template haymonsterbrain base=stdbrain size=0x4e0
+template haystack base=agent size=0x380
+  { haystack
+    1 haystackbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=67109888
+    5 XZRAD = 2.0
+    { haystackbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sf_haystack/sf_haystack.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template haystackbrain base=brain size=0x3d0
+template headbanger base=agent size=0x380
+  { headbanger
+    1 headbangerbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 firebodyeffect
+    5 INITHLTH=210
+    5 XZRAD=0.19
+    5 ROLE = hostile !
+    5 SURFTYPE = 16
+    { headbangerbrain
+      5 BURNAMOUNT = 100.0
+      5 USENAVMESH = 1
+      5 SIGHTRANGE = 15.0
+      5 SIGHTCONE = 360.0
+      5 CLOSEATTACKCNT = 1
+      5 CLOSEATTACKD0 = 1.0
+      5 CLOSEATTACKP0 = 10.0
+      5 WAITTIME=4.0
+      5 WAITPROB=0.33
+      5 DEATHCNT=2
+    }
+    { corporeal
+      5 RES = exporteddata/characters/head_banger/head_banger.group
+      5 ANIMS = exporteddata/characters/head_banger/head_banger_apkg.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 DEC=10.0
+      5 PTRNG = 0.1
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template headbangerbrain base=stdbrain size=0x4e0
+template healthpickup base=entcomposite size=0x360
+  { healthpickup
+    1 pickupbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { pickupbrain
+      5 NAME = health_points
+      5 QUANTITY = 25
+      5 AXIS = 1
+      5 SCALE = 1.0
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_health_vial/all_health_vial.group
+    }
+  }
+template herdedbrain base=stdbrain size=0x520
+template heroscrossbowtrail base=entcomposite size=0x360
+  { heroscrossbowtrail
+    1 trailbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { trailbrain
+      5 TRAILSPARTICLES = 0
+      5 TRAILSSURFACE = 1
+      5 TRAILSSPRITE = 0
+      5 SURFACECOLOURSTART = 1.0,0.5,0.5
+      5 FARUPD = 1
+      5 VFARUPD = 1
+    }
+  }
+template hhdoormegwynne base=entcomposite size=0x360
+  { hhdoormegwynne
+    1 hhdoormegwynnebrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 66752
+    { hhdoormegwynnebrain
+      5 CHALVAL = 14
+      5 UPDATEEVENT = hh_door_megwynne_update !
+    }
+    { corporeal
+      5 RES = exporteddata/objects/hh_door_hindou_megwynne/hh_door_hindou_megwynne.group
+      5 ANIMS = exporteddata/objects/hh_door_hindou_megwynne/hh_door_hindou_megwynne_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template hhdoormegwynnebrain base=chalicetriggerdoorbrain size=0x160
+template hhdoorstairs base=entcomposite size=0x360
+  { hhdoorstairs
+    1 hhdoorstairsbrain
+    1 corporeal
+    5 ENTCOLFLG = 66752
+    { hhdoorstairsbrain
+      5 CHALVAL = 4
+      5 UPDATEEVENT = hh_door_stairs_update
+    }
+    { corporeal
+      5 RES = exporteddata/objects/hh_door_hinsin_stairs/hh_door_hinsin_stairs.group
+    }
+  }
+template hhdoorstairsbrain base=chalicetriggerdoorbrain size=0x160
+template hhstatue base=entcomposite size=0x360
+  { hhstatue
+    1 hhstatuebrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    { hhstatuebrain
+    }
+    { corporeal
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template hhstatuebrain base=brain size=0x150
+template hhstatuestanyer base=entcomposite size=0x360
+  { hhstatuestanyer
+    1 hhstatuebrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ROLE = obstacle !
+    5 XZRAD = 2.0
+    5 ENTCOLFLG = 66753
+    { hhstatuebrain
+    }
+    { corporeal
+      5 RES = exporteddata/characters/hewer/hewer.group
+      5 ANIMS = exporteddata/characters/hewer/hewer_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template hhstatuetim base=entcomposite size=0x360
+  { hhstatuetim
+    1 hhstatuebrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ROLE = obstacle !
+    5 XZRAD = 2.0
+    5 ENTCOLFLG = 66753
+    { hhstatuebrain
+    }
+    { corporeal
+      5 RES = exporteddata/characters/tim/tim.group
+      5 ANIMS = exporteddata/characters/tim/tim_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template hhstatuewoden base=entcomposite size=0x360
+  { hhstatuewoden
+    1 hhstatuebrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ROLE = obstacle !
+    5 XZRAD = 2.0
+    5 ENTCOLFLG = 66753
+    { hhstatuebrain
+    }
+    { corporeal
+      5 RES = exporteddata/characters/woden/woden.group
+      5 ANIMS = exporteddata/characters/woden/woden_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template hrbridgeflame base=agent size=0x380
+  { hrbridgeflame
+    1 hrbridgeflamebrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=1217
+    { hrbridgeflamebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/hr_fire_bridge/hr_fire_bridge.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template hrbridgeflamebrain base=brain size=0x890
+template imp1brain base=stdbrain size=0x500
+template imp2brain base=stdbrain size=0x540
+template impflamer base=agent size=0x380
+  { impflamer
+    1 imp1brain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 firebodyeffect
+    5 ROLE = hostile !
+    5 INITHLTH = 150
+    5 SURFTYPE = 16
+    { imp1brain
+      5 BURNAMOUNT = 100.0
+      5 SIGHTRANGE = 15.0
+      5 SIGHTCONE = 140.0
+      5 CLOSEATTACKCNT = 2
+      5 CLOSEATTACKD0 = 1.5
+      5 CLOSEATTACKD1 = 1.5
+      5 CLOSEATTACKP0 = 0.5
+      5 CLOSEATTACKP1 = 0.5
+      5 WAITPROB = 0.09
+      5 CONFINEMOVE = 40.0
+      5 JUMPLEN = 5.0
+      5 BOUNCINESS = 0.6
+      5 FARUPD = 1
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/imp/imp1_apkg.group
+      5 RES = exporteddata/characters/imp/imp.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 FARUPD = 1
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 GRAVITY = -30.0
+      5 FARUPD = 1
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template impmech base=agent size=0x380
+  { impmech
+    1 impmechbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 66769
+    5 XZRAD = 2.0
+    { impmechbrain
+    }
+    { corporeal
+      5 FARUPD=1
+      5 FARREND=1
+      5 RES = exporteddata/characters/imp/imp.group
+      5 ANIMS = exporteddata/characters/imp/imp_mech_apkg.group
+    }
+    { directanimmotion
+      5 FARUPD=1
+      5 FARREND=1
+    }
+    { soundplayer
+    }
+  }
+template impmechbrain base=brain size=0x150
+template impthief base=agent size=0x380
+  { impthief
+    1 imp2brain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    1 firebodyeffect
+    5 UPDPRI = 45
+    5 ROLE = hostile !
+    5 INITHLTH = 150
+    5 SURFTYPE = 16
+    { imp2brain
+      5 BURNAMOUNT = 100.0
+      5 SIGHTRANGE = 15.0
+      5 SIGHTCONE = 140.0
+      5 CLOSEATTACKD0 = 2.5
+      5 WAITPROB = 0.09
+      5 CONFINEMOVE = 40.0
+      5 FARUPD = 1
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/imp/imp2_apkg.group
+      5 RES = exporteddata/characters/imp/imp.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 FARUPD = 1
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 FARUPD = 1
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template ip_forest_key base=pickup size=0x360
+  { ip_forest_key
+    1 pickupbrain
+    1 corporeal
+    { pickupbrain
+      5 NAME = forest_key
+    }
+    5 ENTCOLFLG=1217
+    { corporeal
+      5 RES = exporteddata/objects/all_forest_key/all_forest_key.group
+    }
+  }
+template ip_land_lord_bust base=pickup size=0x360
+  { ip_land_lord_bust
+    1 pickupbrain
+    1 corporeal
+    5 ENTCOLFLG = 1217
+    { pickupbrain
+      5 NAME = landlord_bust
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_bust_landlord/all_bust_landlord.group
+    }
+  }
+template kardokarrow base=entcomposite size=0x360
+  { arrow
+    1 projectilebrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG = 1040
+    5 ROLE = hostile projectile !
+    { projectilebrain
+      5 VFARUPD = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_arrow/all_arrow.group
+    }
+  }
+template lever base=agent size=0x380
+  { lever
+    1 leverbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG=67175617
+    { leverbrain
+      5 USENAVMESHASTARGET = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_lever/all_lever.group
+      5 ANIMS = exporteddata/objects/all_lever/all_lever_apkg.group
+    }
+    { directanimmotion
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template leverbrain base=brain size=0x150
+template longbowtrail base=entcomposite size=0x360
+  { longbowtrail
+    1 trailbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { trailbrain
+      5 TRAILSPARTICLES = 0
+      5 TRAILSSURFACE = 1
+      5 TRAILSSPRITE = 0
+      5 FARUPD = 1
+      5 VFARUPD = 1
+    }
+  }
+template lordkardok base=agent size=0x380
+  { lordkardok
+    1 lordkardokbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ROLE = hostile boss !
+    5 INITHLTH = 4000
+    5 SURFTYPE = 16
+    { lordkardokbrain
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { corporeal
+      5 VFARREND=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 FARUPD=1
+      5 ANIMS = exporteddata/characters/lord_kardok/lord_kardok_apkg.group
+      5 RES = exporteddata/characters/lord_kardok/lord_kardok.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 VFARREND=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template lordkardokbrain base=brain size=0x470
+template madaxeman base=agent size=0x380
+  { madaxeman
+    1 madaxemanbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 minigamecamera
+    5 ROLE=hostile !
+    5 XZRAD = 2.0
+    5 TGTOFFSET=0.0, 2.5, 0.0
+    5 INITHLTH = 5000
+    5 HEIGHT = 3.5
+    5 SURFTYPE = 16
+    { madaxemanbrain
+      5 MAXHEALTHCHARGESTATE= 2000.0
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 FARREND= 1
+      5 VFARREND= 1
+      5 CLOSEATTACKD0 = 11.75
+      5 CLOSEATTACKP0 = 0.7
+      5 CLOSEATTACKD1 = 11.75
+      5 CLOSEATTACKP1 = 0.3
+      5 CLOSEATTACKCNT = 2
+      5 RANGEATTACKCNT = 1
+      5 RANGEATTACKD0 = 99.0
+      5 MINRANGEATTACKD0 = 11.75
+      5 RANGEREP0 = 1
+      5 RANGEDEL0 = 1.0
+      5 SIGHTRANGE = 99.0
+      5 SIGHTCONE = 360.0
+      5 USENAVMESH = 1
+      5 WAITTIME = 0.5f
+      5 CHKNVULN=0
+    }
+    { corporeal
+      5 VFARREND=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 FARUPD=1
+      5 ANIMS = exporteddata/characters/madaxeman/madaxeman_apkg.group
+      5 RES = exporteddata/characters/madaxeman/madaxeman.group
+      5 RADIUS = 100
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 VFARREND=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 FARUPD=1
+      5 ACC = 2.5
+      5 DEC = 1.5
+      5 TRSTAT = 180.0
+      5 TRMOV = 120.0
+    }
+    { soundplayer
+    }
+    { minigamecamera
+      5 STARTACTIVE= 1
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 BASISYOFFSET= 0.0
+      5 HOTSPOT= 1
+      5 PLUGIN=<MINIGAME_FIXED>
+      5 DEFPLUGIN= 7
+    }
+  }
+template madaxemanaxe base=agent size=0x470
+  { madaxemanaxe
+    1 collision
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG = 16
+    5 ROLE=projectile !
+    { corporeal
+      5 RES = exporteddata/objects/ia_madaxemanaxe/ia_madaxemanaxe.group
+    }
+    { collision
+      5 SURF = 0
+      5 STATE = 0
+      5 BLKMOT = 0
+    }
+    { soundplayer
+    }
+  }
+template madaxemanbrain base=stdbrain size=0x7c0
+template madparentbrain base=stdbrain size=0x4f0
+template mayor base=agent size=0x380
+  { mayor
+    1 mayorbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 XZRAD = 0.8
+    5 ROLE = friend !
+    { mayorbrain
+      5 KEYUSEDEVENT = used_mayor_key !
+    }
+    { corporeal
+      5 RES = exporteddata/characters/mayor/mayor.group
+      5 ANIMS = exporteddata/characters/mayor/mayor_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template mayorbrain base=brain size=0x180
+template mechadeath base=entcomposite size=0x360
+  { mechadeath
+    1 mechadeathbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 XZRAD = 1.5
+    5 ROLE = obstacle !
+    5 ENTCOLFLG = 65541
+    { mechadeathbrain
+    }
+    { corporeal
+      5 RES = exporteddata/characters/mecha_death/mecha_death.group
+      5 ANIMS = exporteddata/characters/mecha_death/mecha_death_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template mechadeathbrain base=brain size=0x150
+template mechanicalimp base=agent size=0x380
+  { mechanicalimp
+    1 mechanicalimpbrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    1 minigamecamera
+    5 ENTCOLFLG = 10485777
+    5 XZRAD = 2.0
+    5 INITHLTH = 800
+    5 ROLE = hostile !
+    5 SURFTYPE = 17
+    { mechanicalimpbrain
+    }
+    { corporeal
+      5 RADIUS=10.0
+      5 FARUPD=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 VFARREND=1
+      5 RES = exporteddata/characters/mechanical_imp/mechanical_imp.group
+      5 ANIMS = exporteddata/characters/mechanical_imp/mechanical_imp_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 FARUPD=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 VFARREND=1
+    }
+    { collision
+    }
+    { minigamecamera
+      5 STARTACTIVE= 1
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 BASISYOFFSET= 0.0
+      5 HOTSPOT= 1
+      5 PLUGIN=<MINIGAME_FIXED>
+      5 DEFPLUGIN= 7
+    }
+    { soundplayer
+    }
+  }
+template mechanicalimpbrain base=brain size=0x920
+template mechimpfire base=agent size=0x380
+  { mechimpfire
+    1 projectilebrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=1104
+    { projectilebrain
+      5 VFARUPD = 1
+      5 EXPLOSION = fireexplosion
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sf_mech_imp_fire/sf_mech_imp_fire.group
+    }
+  }
+template mechimphead base=agent size=0x380
+  { mechimphead
+    1 mechimpheadbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 66769
+    5 ROLE = hostile !
+    { mechimpheadbrain
+    }
+    { corporeal
+      5 FARUPD=1
+      5 FARREND=1
+      5 RES = exporteddata/characters/mechanical_imp_head/mechanical_imp_head.group
+      5 ANIMS = exporteddata/characters/mechanical_imp_head/mechanical_imp_head_apkg.group
+    }
+    { directanimmotion
+      5 FARUPD=1
+      5 FARREND=1
+    }
+    { soundplayer
+    }
+  }
+template mechimpheadbrain base=brain size=0x170
+template medievillogo base=agent size=0x380
+  { medievillogo
+    1 medievillogobrain
+    1 corporeal
+    5 ENTCOLFLG=1217
+    { medievillogobrain
+    }
+    { corporeal
+    }
+  }
+template medievillogobrain base=brain size=0x410
+template minigame base=agent size=0x4d0
+  { minigame
+    5 ENTCOLFLG = 1233
+  }
+template minigamecamera base=camera size=0x280
+template motion base=entunit size=0x280
+template mrmad base=agent size=0x380
+  { mrmad
+    1 madparentbrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    1 firebodyeffect
+    5 INITHLTH = 260
+    5 ROLE = hostile !
+    5 XZRAD = 0.75
+    5 ENTCOLFLG = 67108864
+    5 SURFTYPE = 16
+    { madparentbrain
+      5 BURNAMOUNT = 100.0
+      5 CHALPENHIT = 5
+      5 CHALPENKILL = 10
+      5 CLOSEATTACKD0 = 2.5
+      5 CONFINEMOVE = 30.0
+      5 SIGHTCONE = 270.0
+      5 SIGHTRANGE = 15.0
+      5 STUNDUR = 10.0
+      5 USENAVMESH = 1
+      5 USESTUN = 1
+      5 WAITANIMCNT = 2
+      5 WAITPROB = 0.33
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/mr_mad/mr_mad_apkg.group
+      5 RES = exporteddata/characters/mr_mad/mr_mad.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { collision
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template mrsmad base=agent size=0x380
+  { mrsmad
+    1 madparentbrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    1 firebodyeffect
+    5 INITHLTH = 260
+    5 ROLE = hostile !
+    5 XZRAD = 0.6
+    5 ENTCOLFLG = 67108864
+    5 SURFTYPE = 16
+    { madparentbrain
+      5 BURNAMOUNT = 100.0
+      5 CHALPENHIT = 5
+      5 CHALPENKILL = 10
+      5 CLOSEATTACKD0 = 2.0
+      5 CONFINEMOVE = 30.0
+      5 SIGHTCONE = 300.0
+      5 SIGHTRANGE = 15.0
+      5 STUNDUR = 10.0
+      5 USENAVMESH = 1
+      5 USESTUN = 1
+      5 WAITANIMCNT = 3
+      5 WAITPROB = 0.33
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/mrs_mad/mrs_mad_apkg.group
+      5 RES = exporteddata/characters/mrs_mad/mrs_mad.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { collision
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template mummy base=agent size=0x380
+  { mummy
+    1 mummybrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 firebodyeffect
+    5 INITHLTH=190
+    5 ROLE = hostile !
+    { mummybrain
+      5 BURNAMOUNT = 150.0
+      5 SIGHTRANGE = 10.0
+      5 SIGHTCONE = 130.0
+      5 USENAVMESH = 1
+      5 CLOSEATTACKCNT = 2
+      5 CLOSEATTACKP0 = 1.0
+      5 CLOSEATTACKD0 = 2.0
+      5 CLOSEATTACKP1 = 1.0
+      5 CLOSEATTACKD1 = 2.0
+    }
+    { corporeal
+      5 RES = exporteddata/characters/mummy/mummy.group
+      5 ANIMS = exporteddata/characters/mummy/mummy_apkg.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 ACC = 2.5
+      5 DEC = 1.5
+      5 TRSTAT = 180.0
+      5 TRMOV = 120.0
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template mummybrain base=stdbrain size=0x4e0
+template nelliemad base=agent size=0x380
+  { nelliemad
+    1 nelliemadbrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    1 firebodyeffect
+    5 INITHLTH = 200
+    5 ROLE = hostile !
+    5 XZRAD = 0.3
+    5 ENTCOLFLG = 67108864
+    5 SURFTYPE = 16
+    { nelliemadbrain
+      5 BURNAMOUNT = 100.0
+      5 CHALPENHIT = 5
+      5 CHALPENKILL = 10
+      5 CLOSEATTACKD0 = 1.0
+      5 CONFINEMOVE = 30.0
+      5 SIGHTCONE = 270.0
+      5 SIGHTRANGE = 20.0
+      5 STUNDUR = 10.0
+      5 USENAVMESH = 1
+      5 USESTUN = 1
+      5 WAITANIMCNT = 2
+      5 WAITPROB = 0.33
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/nellie_mad/nellie_mad_apkg.group
+      5 RES = exporteddata/characters/nellie_mad/nellie_mad.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { collision
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template nelliemadbrain base=madparentbrain size=0x4f0
+template nestbrain base=brain size=0x160
+template noose base=entcomposite size=0x360
+  { noose
+    1 noosebrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 1217
+    { noosebrain
+      5 BREAKEVENT = drop_farmers !
+    }
+    { corporeal
+      5 RES = exporteddata/objects/hr_noose/hr_noose.group
+      5 ANIMS = exporteddata/objects/hr_noose/hr_noose_movement_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template noosebrain base=brain size=0x150
+template obstacle base=agent size=0x380
+  { obstacle
+    1 obstaclebrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG = 79724561
+    { obstaclebrain
+    }
+    { corporeal
+    }
+    { directanimmotion
+      5 SIMPLE = 1
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template obstaclebrain base=brain size=0x190
+template obstruction base=entcomposite size=0x360
+  { obstruction
+    1 corporeal
+    { corporeal
+      5 RES = exporteddata/characters/mummy/mummy.group
+    }
+    5 ENTCOLFLG=1
+  }
+template obstructionwall base=entcomposite size=0x360
+  { obstructionwall
+    1 corporeal
+    { corporeal
+      5 RES = exporteddata/characters/mummy/mummy.group
+    }
+    5 ENTCOLFLG=1
+  }
+template oilexplosion base=entcomposite size=0x360
+  { oilexplosion
+    1 explosionbrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG = 1233
+    5 ROLE = hostile explosion !
+    { explosionbrain
+      5 VFARUPD = 1
+      5 DURATION=4.0
+      5 DAMAGE=0.0
+      5 CREATESSPRITE = 0
+      5 CREATESPARTICLES = 1
+      5 CREATESSHELL = 0
+      5 PARTICLETYPE=0
+      5 PARTICLECOLOURSTART = 0.36,0.25,0.125
+      5 PARTICLECOLOUREND = 0.125,0.25,0.36
+      5 PARTICLESCALE = 	0.25
+      5 SUBEXPLOSION = steamexplosion
+      5 SUBTIME = 0.2
+    }
+    { corporeal
+    }
+  }
+template oilpit base=agent size=0x380
+  { oilpit
+    1 oilpitbrain
+    1 corporeal
+    5 ENTCOLFLG=1217
+    { oilpitbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/hr_oil_pit_2/hr_oil_pit_2.group
+    }
+  }
+template oilpit2 base=agent size=0x380
+  { oilpit2
+    1 oilpit2brain
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG=1217
+    { oilpit2brain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/hr_oil_pit_2/hr_oil_pit_2.group
+    }
+    { soundplayer
+    }
+  }
+template oilpit2brain base=brain size=0x160
+template oilpitbrain base=brain size=0x160
+template oilpump base=agent size=0x380
+  { oilpump
+    1 oilpumpbrain
+    1 corporeal
+    1 directanimmotion
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=66753
+    { oilpumpbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/hr_castle_pump/hr_castle_pump.group
+      5 ANIMS = exporteddata/objects/hr_castle_pump/hr_castle_pump_apkg.group
+    }
+    { directanimmotion
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template oilpumpbrain base=brain size=0x160
+template phantomofopera base=agent size=0x380
+  { phantomofopera
+    1 phantomofoperabrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 1217
+    { phantomofoperabrain
+    }
+    { corporeal
+      5 RES = exporteddata/characters/phantom_of_the_opera/phantom_of_the_opera.group
+      5 ANIMS = exporteddata/characters/phantom_of_the_opera/phantom_of_the_opera_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template phantomofoperabrain base=brain size=0x160
+template pickup base=entcomposite size=0x360
+  { pickup
+    1 pickupbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { pickupbrain
+      5 NAME = DUMMY_PICKUP
+      5 QUANTITY = 1
+      5 AXIS = 1
+      5 SCALE = 1.0
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_rune_chaos/all_rune_chaos.group
+    }
+  }
+template pickupbrain base=brain size=0x340
+template piratecaptain base=agent size=0x380
+  { piratecaptain
+    1 piratecaptainbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 INITHLTH=180
+    5 XZRAD=1.0
+    5 ENTCOLFLG = 1
+    { piratecaptainbrain
+      5 SIGHTRANGE = 10.0
+      5 SIGHTCONE = 160.0
+      5 USENAVMESH = 1
+      5 CLOSEATTACKCNT = 0
+      5 RANGEATTACKCNT = 1
+      5 RANGEATTACKD0 = 10.0
+      5 RANGEREP0 = 1
+      5 RANGEDEL0 = 1.0
+      5 BLOODTEXTURE = sfx_bones_abe.psm
+      5 CHKNVULN=0
+      5 BLOODBITS = 20
+      5 BLOODSCALE = 0.3
+    }
+    { corporeal
+      5 RES = exporteddata/characters/skeleton_pirate_captain/skeleton_pirate_captain.group
+      5 ANIMS = exporteddata/characters/skeleton_pirate_captain/skeleton_pirate_captain_apkg.group
+    }
+    { directanimmotion
+      5 DEC=20.0
+    }
+    { soundplayer
+    }
+  }
+template piratecaptainbrain base=stdbrain size=0x690
+template piratecrew base=agent size=0x380
+  { piratecrew
+    1 piratecrewbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 INITHLTH=280
+    5 XZRAD=0.6
+    5 ROLE = hostile !
+    { piratecrewbrain
+      5 SIGHTRANGE = 20.0
+      5 SIGHTCONE = 160.0
+      5 USENAVMESH = 1
+      5 CLOSEATTACKCNT = 3
+      5 ALLCLSATTPROB = 0.98
+      5 CLOSEATTACKP0 = 18.0
+      5 CLOSEATTACKD0 = 2.0
+      5 CLOSEATTACKP1 = 0.02
+      5 CLOSEATTACKD1 = 5.0
+      5 CLOSEATTACKP2 = 12.0
+      5 CLOSEATTACKD2 = 2.0
+      5 RUN2ATKPOS = 1
+      5 WAITTIME=4.0
+      5 WAITPROB=0.2
+      5 RUN2SGTPOS=1
+      5 SKELXPLDE=1
+      5 ALERT=1
+      5 BLOODTEXTURE = sfx_bones_abe.psm
+      5 BLOODBITS = 20
+      5 BLOODSCALE = 0.3
+    }
+    { corporeal
+      5 RES = exporteddata/characters/skeleton_pirate_crew/skeleton_pirate_crew.group
+      5 ANIMS = exporteddata/characters/skeleton_pirate_crew/skeleton_pirate_crew_apkg.group
+      5 SHATTER = < pelvis shoulder_l elbow_l wrist_l shoulder_r elbow_r wrist_r head tale knee_r ankle_r knee_l ankle_l rope>!
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 GRAVITY = -30.0
+    }
+    { soundplayer
+    }
+  }
+template piratecrewbrain base=stdbrain size=0x4f0
+template pirateofficer base=agent size=0x380
+  { pirateofficer
+    1 pirateofficerbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 XZRAD=0.6
+    5 ROLE = hostile !
+    5 INITHLTH=300
+    { pirateofficerbrain
+      5 SIGHTRANGE = 25.0
+      5 SIGHTCONE = 160.0
+      5 USENAVMESH = 1
+      5 CLOSEATTACKCNT = 0
+      5 RANGEATTACKCNT = 1
+      5 RANGEATTACKD0 = 10.0
+      5 RANGEREP0 = 3
+      5 RANGEDEL0 = 3.0
+      5 RETREATD0 = 0.0
+      5 RETREATA0 = 8.0
+      5 SKELXPLDE = 1
+      5 ALERT=1
+      5 BLOODTEXTURE = sfx_bones_abe.psm
+      5 BLOODBITS = 20
+      5 BLOODSCALE = 0.3
+    }
+    { corporeal
+      5 RES = exporteddata/characters/skeleton_pirate_officer/skeleton_pirate_officer.group
+      5 ANIMS = exporteddata/characters/skeleton_pirate_officer/skeleton_pirate_officer_apkg.group
+      5 SHATTER =<pelvis shoulder_l elbow_l wrist_l shoulder_r elbow_r wrist_r head knee_r ankle_r knee_l ankle_l >!
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template pirateofficerbrain base=stdbrain size=0x620
+template piratesmuggler base=agent size=0x380
+  { piratesmuggler
+    1 piratesmugglerbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 INITHLTH=230
+    5 XZRAD=0.6
+    5 ROLE = hostile !
+    { piratesmugglerbrain
+      5 SIGHTRANGE = 20.0
+      5 SIGHTCONE = 160.0
+      5 USENAVMESH = 1
+      5 CLOSEATTACKCNT = 2
+      5 CLOSEATTACKP0 = 10.0
+      5 CLOSEATTACKD0 = 2.0
+      5 CLOSEATTACKP1 = 0.01
+      5 CLOSEATTACKD1 = 3.0
+      5 RUN2ATKPOS = 1
+      5 WAITTIME=4.0
+      5 WAITPROB=0.2
+      5 RUN2SGTPOS=1
+      5 SKELXPLDE=1
+      5 ALERT=1
+      5 BLOODTEXTURE = sfx_bones_abe.psm
+      5 BLOODBITS = 20
+      5 BLOODSCALE = 0.3
+    }
+    { corporeal
+      5 RES = exporteddata/characters/skeleton_pirate_smuggler/skeleton_pirate_smuggler.group
+      5 ANIMS = exporteddata/characters/skeleton_pirate_smuggler/skeleton_pirate_smuggler_apkg.group
+      5 SHATTER = <pelvis shoulder_l elbow_l wrist_l shoulder_r elbow_r wrist_r head knee_r ankle_r knee_l ankle_l >!
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template piratesmugglerbrain base=stdbrain size=0x4f0
+template pitofdeathgame base=minigame size=0x4d0
+  { pitofdeathgame
+    5 ENTCOLFLG = 1233
+  }
+template progressflag base=agent size=0x3a0
+  { progressflag
+    1 progressflagbrain
+    1 corporeal
+    1 directanimmotion
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { progressflagbrain
+      5 QUANTITY = 4
+    }
+    { corporeal
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 RES = exporteddata/objects/all_checkpoint/all_checkpoint.group
+      5 ANIMS = exporteddata/objects/all_checkpoint/all_checkpoint_boing_apkg.group
+    }
+    { directanimmotion
+      5 FARUPD= 1
+      5 VFARUPD= 1
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template progressflagbrain base=brain size=0x160
+template projectileaxe base=agent size=0x380
+  { projectileaxe
+    1 projectilebrain
+    1 collision
+    1 corporeal
+    5 ENTCOLFLG = 1040
+    5 ROLE = hostile projectile !
+    { projectilebrain
+      5 DAMAGE = 45.0
+      5 VFARUPD = 1
+    }
+    { collision
+    }
+    { corporeal
+      5 RES = exporteddata/characters/undead_warrior_axe/undead_warrior_axe.group
+    }
+  }
+template projectilebrain base=brain size=0x200
+template projectilespit base=agent size=0x380
+  { projectilespit
+    1 projectilebrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG = 1040
+    5 ROLE = hostile projectile !
+    { projectilebrain
+      5 DAMAGE = 40.0
+    }
+    { corporeal
+      5 RES = exporteddata/objects/pg_pumpkin_seed/pg_pumpkin_seed.group
+    }
+  }
+template pumpkinfarmer base=agent size=0x380
+  { pumpkinfarmer
+    1 pumpkinfarmerbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 1
+    5 ROLE = obstacle !
+    5 XZRAD = 0.65
+    { pumpkinfarmerbrain
+    }
+    { corporeal
+      5 RES = exporteddata/characters/farmer/farmer.group
+      5 ANIMS = exporteddata/characters/farmer/farmer_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template pumpkinfarmerbrain base=brain size=0x150
+template pumpkinking base=agent size=0x380
+  { pumpkinking
+    1 pumpkinkingbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ROLE = hostile !
+    5 XZRAD = 2.0
+    5 INITHLTH = 2000
+    5 TGTOFFSET=0.0, 2.4, 0.0
+    5 HEIGHT = 8.5
+    { pumpkinkingbrain
+      5 AWAKENEVENT = pumpkinkingawaken
+      5 DEADEVENT = pumpkinkingdead
+      5 CHKNVULN=0
+      5 BLOODTEXTURE = sfx_orange_drop_abe.psm
+      5 BLOODJOINTNAME = shoulder
+      5 BLOODSCALE = 0.3
+      5 BLOODDIRECTIONOFFSET = 1.5
+      5 BLOODVELOCITYSCALAR = 4.0
+      5 BLOODQTYMOD = 4
+      5 BLOODBITS = 32
+    }
+    { corporeal
+      5 RES = exporteddata/characters/pumpkin_king/pumpkin_king.group
+      5 ANIMS = exporteddata/characters/pumpkin_king/pumpkin_king_apkg.group
+      5 RADIUS = 14.0
+    }
+    { directanimmotion
+      5 TRSTAT = 60.0
+      5 TRMOV = 60.0
+    }
+    { soundplayer
+    }
+    { collision
+      5 COLLSCALE = 1
+      5 BOUNDRAD = 14.0
+    }
+  }
+template pumpkinkingbombbrain base=stdbrain size=0x4f0
+template pumpkinkingbrain base=stdbrain size=0x510
+template pumpkinkingwallbrain base=brain size=0x160
+template pumpkinplatformbrain base=brain size=0x160
+template pumpkinpod base=agent size=0x380
+  { pumpkinpod
+    1 pumpkinpodbrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 67110081
+    { pumpkinpodbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/pg_dark_root/pg_dark_root.group
+      5 ANIMS = exporteddata/objects/pg_dark_root/pg_dark_root_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template pumpkinpodbrain base=brain size=0x180
+template pumpkinspitter base=agent size=0x380
+  { pumpkinspitter
+    1 pumpkinspitterbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 firebodyeffect
+    5 INITHLTH=170
+    5 XZRAD=1.0
+    5 ROLE = hostile !
+    5 SURFTYPE = 16
+    { pumpkinspitterbrain
+      5 BURNAMOUNT = 100.0
+      5 SIGHTRANGE = 8.0
+      5 SIGHTCONE = 200.0
+      5 USENAVMESH = 1
+      5 CLOSEATTACKCNT = 1
+      5 CLOSEATTACKD0 = 3.0
+      5 RANGEATTACKCNT = 1
+      5 RANGEATTACKD0 = 8.0
+      5 RANGEREP0 = 1
+      5 RANGEDEL0 = 1.0
+      5 AMBUSHATTACKD0 = 2.0
+      5 RUN2ATKPOS = 1
+      5 BLOODTEXTURE = sfx_orange_drop_abe.psm
+    }
+    { corporeal
+      5 RES = exporteddata/characters/pumpkin_tounger/pumpkin_tounger.group
+      5 ANIMS = exporteddata/characters/pumpkin_tounger/pumpkin_tounger_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { collision
+      5 BOUNDRAD=3.0
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template pumpkinspitterbrain base=stdbrain size=0x4e0
+template pumpkintonguer base=agent size=0x380
+  { pumpkintonguer
+    1 pumpkintonguerbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 firebodyeffect
+    5 INITHLTH=170
+    5 XZRAD=1.0
+    5 ROLE = hostile !
+    5 SURFTYPE = 16
+    { pumpkintonguerbrain
+      5 BURNAMOUNT = 100.0
+      5 SIGHTRANGE = 8.0
+      5 SIGHTCONE = 200.0
+      5 USENAVMESH = 1
+      5 CLOSEATTACKCNT = 2
+      5 CLOSEATTACKD0 = 0.0
+      5 CLOSEATTACKP0 = 0.0
+      5 CLOSEATTACKD1 = 3.0
+      5 CLOSEATTACKP1 = 1.0
+      5 AMBUSHATTACKD0 = 2.0
+      5 RUN2ATKPOS = 1
+      5 BLOODTEXTURE = sfx_orange_drop_abe.psm
+    }
+    { corporeal
+      5 RES = exporteddata/characters/pumpkin_tounger/pumpkin_tounger.group
+      5 ANIMS = exporteddata/characters/pumpkin_tounger/pumpkin_tounger_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 GRAVITY = -30.0
+    }
+    { soundplayer
+    }
+    { collision
+      5 COLLSCALE=1
+      5 BOUNDRAD=3.0
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template pumpkintonguerbrain base=stdbrain size=0x4f0
+template pumpkinwater base=agent size=0x380
+  { pumpkinwater
+    1 corporeal
+    5 ENTCOLFLG = 1217
+    { corporeal
+      5 RES = exporteddata/objects/pg_pond_water/pg_pond_water.group
+    }
+  }
+template pumpkinwitch base=agent size=0x380
+  { pumpkinwitch
+    1 pumpkinwitchbrain
+    { pumpkinwitchbrain
+    }
+  }
+template pumpkinwitchbrain base=brain size=0x150
+template racegame base=entcomposite size=0x430
+  { racegame
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { soundplayer
+      5 SRS= sound/989_banks/realms/racegame/racegame.bnk !
+      5 FARUPD= 1
+      5 VFARUPD= 1
+    }
+  }
+template ratbrain base=stdbrain size=0x500
+template ringmaster base=agent size=0x380
+  { ringmaster
+    1 ringmasterbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 minigamecamera
+    5 ENTCOLFLG=66753
+    { ringmasterbrain
+      5 SPEECH = e_00109_cs.vag
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/carnival_skeleton_1/carnival_skeleton_1_apkg.group
+      5 RES = exporteddata/characters/carnival_skeleton_3/carnival_skeleton_3.group
+    }
+    { directanimmotion
+    }
+    { minigamecamera
+      5 STARTACTIVE= 1
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 BASISYOFFSET= 0.0
+      5 HOTSPOT= 1
+      5 PLUGIN=<MINIGAME_FIXED>
+      5 DEFPLUGIN= 7
+    }
+    { soundplayer
+    }
+  }
+template ringmasterbrain base=brain size=0x290
+template ringoffire base=agent size=0x380
+  { ringoffire
+    1 ringoffirebrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=1216
+    { ringoffirebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/ef_ring_fire/ef_ring_fire.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template ringoffirebrain base=brain size=0x4f0
+template rollingspline base=agent size=0x380
+  { rollingspline
+    1 rollingsplinebrain
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG=1217
+    { rollingsplinebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/hr_boulder/hr_boulder.group
+    }
+    { soundplayer
+    }
+  }
+template rollingsplinebrain base=brain size=0x190
+template rootgateroots base=agent size=0x380
+  { rootgateroots
+    1 rootgaterootsbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG = 1217
+    { rootgaterootsbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/pg_root_gate_roots/pg_root_gate_roots.group
+      5 ANIMS = exporteddata/objects/pg_root_gate_roots/pg_root_gate_roots_apkg.group
+    }
+    { directanimmotion
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template rootgaterootsbrain base=brain size=0x160
+template rootspike base=agent size=0x380
+  { rootspike
+    1 rootspikebrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 INITHLTH=200
+    5 ROLE=hostile !
+    5 ENTCOLFLG = 1233
+    { rootspikebrain
+      5 USENAVMESH = 0
+    }
+    { corporeal
+      5 RES = exporteddata/characters/root_spike/root_spike.group
+      5 ANIMS = exporteddata/characters/root_spike/root_spike_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { collision
+      5 BOUNDRAD=7.2
+    }
+  }
+template rootspikebrain base=brain size=0x160
+template rubble base=agent size=0x380
+  { rubble
+    1 rubblebrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 1105
+    { rubblebrain
+      5 FARUPD = 1
+      5 FARREND = 1
+      5 VFARUPD = 1
+      5 VFARREND = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_boulder_pieces/all_boulder_pieces.group
+      5 ANIMS = exporteddata/objects/all_boulder_pieces/all_boulder_pieces_apkg.group
+      5 FARUPD = 1
+      5 FARREND = 1
+      5 VFARUPD = 1
+      5 VFARREND = 1
+      5 RADIUS = 100.0
+    }
+    { directanimmotion
+      5 FARUPD = 1
+      5 VFARUPD = 1
+      5 GRAVITY = -25.0
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template rubblebrain base=brain size=0x160
+template runehandbrain base=brain size=0x170
+template runepickup base=pickup size=0x360
+  { runepickup
+    1 runepickupbrain
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG = 66769
+    { runepickupbrain
+      5 NAME = DUMMY_RUNE
+      5 QUANTITY = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_rune_chaos/all_rune_chaos.group
+    }
+    { soundplayer
+    }
+  }
+template runepickupbrain base=pickupbrain size=0x350
+template safebrain base=brain size=0x150
+template sarcofaguslid base=agent size=0x380
+  { sarcofaguslid
+    1 sarcofaguslidbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG=67109969
+    { sarcofaguslidbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/ma_scarcofogus_lid/ma_scarcofogus_lid.group
+      5 ANIMS = exporteddata/objects/ma_scarcofogus_lid/ma_scarcofogus_lid_apkg.group
+    }
+    { directanimmotion
+      5 SIMPLE = 1
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template sarcofaguslidbrain base=brain size=0x160
+template scarecrow base=agent size=0x380
+  { scarecrow
+    1 scarecrowbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 firebodyeffect
+    5 XZRAD = 0.4
+    5 ROLE = hostile !
+    5 INITHLTH = 200
+    5 SURFTYPE = 2
+    { scarecrowbrain
+      5 BURNAMOUNT = 150.0
+      5 WALKSPEED = 3.0
+      5 RUNSPEED = 4.0
+      5 SIGHTRANGE = 14.0
+      5 SIGHTCONE = 360.0
+      5 BLOODTEXTURE = haystack_parts_abe.psm
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/scarecrow/scarecrow_apkg.group
+      5 RES = exporteddata/characters/scarecrow/scarecrow.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 GRAVITY = -30.0
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = chest
+    }
+  }
+template scarecrowbrain base=stdbrain size=0x4f0
+template seagulldan base=agent size=0x380
+  { seagulldan
+    1 seagulldanbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG=66753
+    { seagulldanbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sd_seagull_dan/sd_seagull_dan.group
+      5 ANIMS = exporteddata/objects/sd_seagull_dan/sd_seagull_dan_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template seagulldanbrain base=brain size=0x160
+template seagullfly base=agent size=0x380
+  { seagullfly
+    1 seagullflybrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG=1217
+    { seagullflybrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sd_seagull/sd_seagull.group
+      5 ANIMS = exporteddata/objects/sd_seagull/sd_seagull_fly_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template seagullflybrain base=brain size=0x180
+template seagullsit base=agent size=0x380
+  { seagullsit
+    1 seagullsitbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG=66753
+    { seagullsitbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sd_seagull/sd_seagull.group
+      5 ANIMS = exporteddata/objects/sd_seagull/sd_seagull_wait_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template seagullsitbrain base=brain size=0x1a0
+template seedbrain base=brain size=0x160
+template severedhand base=agent size=0x380
+  { severedhand
+    1 severedhandbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG = 67108864
+    { severedhandbrain
+      5 SIGHTRANGE = 15.0
+      5 SIGHTCONE = 360.0
+      5 USENAVMESH = 1
+      5 WALKSPEED = 3.0
+      5 RUNSPEED = 4.0
+      5 BLOODBITS = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_severed_hand/all_severed_hand.group
+      5 ANIMS = exporteddata/objects/all_severed_hand/all_severed_hand_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 DEATHCONF = 1
+    }
+    { soundplayer
+    }
+    { collision
+    }
+  }
+template severedhandbrain base=stdbrain size=0x500
+template shadowdemon base=agent size=0x380
+  { shadowdemon
+    1 shadowdemonbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 firebodyeffect
+    5 XZRAD = 1.7
+    5 ROLE = hostile !
+    5 INITHLTH = 550
+    5 TGTOFFSET=0.0, 1.3, 0.0
+    5 SURFTYPE = 16
+    { shadowdemonbrain
+      5 BURNAMOUNT = 100.0
+      5 SIGHTRANGE = 24.0
+      5 CLOSEATTACKD0 = 3.0
+      5 CLOSEATTACKD1 = 6.5
+      5 CLOSEATTACKP0 = 0.5
+      5 CLOSEATTACKP1 = 0.01
+      5 WAITPROB = 0.2
+      5 CLOSEATTACKCNT = 2
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/shadow_demon/shadow_demon_apkg.group
+      5 RES = exporteddata/characters/shadow_demon/shadow_demon.group
+      5 RADIUS = 5.0
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template shadowdemonbrain base=stdbrain size=0x4e0
+template sheep base=agent size=0x380
+  { sheep
+    1 sheepbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 XZRAD = 0.5
+    5 ENTCOLFLG = 67108864
+    { sheepbrain
+      5 SIGHTRANGE = 10.0
+      5 SIGHTCONE = 160.0
+      5 USENAVMESH = 1
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 DEADUPD=1
+      5 STARTLEDSOUND= sheep_bleat
+    }
+    { corporeal
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 DEADUPD=1
+      5 ANIMS = exporteddata/characters/sheep/sheep_apkg.group
+      5 RES = exporteddata/characters/sheep/sheep.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 FARUPD=1
+      5 VFARUPD = 1
+      5 DEADUPD=1
+      5 ACC = 10.5
+      5 DEC = 10.5
+      5 TRSTAT = 180.0
+      5 TRMOV = 120.0
+    }
+    { soundplayer
+    }
+    { collision
+      5 STATE=1
+    }
+  }
+template sheepbrain base=herdedbrain size=0x520
+template shield base=entcomposite size=0x360
+  { shield
+    5 ROLE=shield !
+  }
+template shieldbronze base=shield size=0x360
+  { shieldbronze
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/all_shield_bronze/all_shield_bronze.group
+    }
+  }
+template shieldgold base=shield size=0x360
+  { shieldgold
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/all_shield_gold/all_shield_gold.group
+    }
+  }
+template shieldsilver base=shield size=0x360
+  { shieldsilver
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/all_shield_silver/all_shield_silver.group
+    }
+  }
+template shipmast base=agent size=0x380
+  { shipmast
+    1 shipmastbrain
+    1 corporeal
+    1 directanimmotion
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=67110081
+    { shipmastbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sd_mast_1/sd_mast_1.group
+      5 ANIMS = exporteddata/objects/sd_mast_1/sd_mast_1_apkg.group
+    }
+    { directanimmotion
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template shipmastbrain base=brain size=0x180
+template shrubbites base=agent size=0x380
+  { shrubbites
+    1 shrubbitesbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 HEIGHT = 0.5
+    5 XZRAD = 1.0
+    5 SURFTYPE = 2
+    5 ENTCOLFLG = 32768
+    5 COLDATARAD=2.0
+    5 UPDPRI = 40
+    { shrubbitesbrain
+      5 WALKSPEED = 8.0
+      5 SIGHTRANGE = 15.0
+      5 SIGHTCONE = 360.0
+      5 BLOODBITS = 1
+    }
+    { corporeal
+      5 RES = exporteddata/characters/dark_shrubbite/dark_shrubbite.group
+      5 ANIMS = exporteddata/characters/dark_shrubbite/dark_shrubbite_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template shrubbitesbrain base=stdbrain size=0x4f0
+template skeletonbow base=agent size=0x380
+  { skeletonbow
+    1 skeletonbowbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ROLE = hostile !
+    5 INITHLTH = 135
+    5 SURG = exporteddata/objects/all_arrow/all_arrow.group !
+    { skeletonbowbrain
+      5 SIGHTRANGE = 25.0
+      5 SIGHTCONE = 150.0
+      5 CLOSEATTACKCNT = 0
+      5 RANGEATTACKCNT = 1
+      5 RANGEATTACKD0 = 18.0
+      5 RETREATD0 = 3.0
+      5 WAITPROB = 0.2
+      5 SKELXPLDE = 1
+      5 BLOODTEXTURE = sfx_bones_abe.psm
+      5 BLOODBITS = 20
+      5 BLOODSCALE = 0.3
+    }
+    { corporeal
+      5 RES = exporteddata/characters/skeleton_archer/skeleton_archer.group
+      5 ANIMS = exporteddata/characters/skeleton_archer/skeleton_archer_apkg.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template skeletonbowbrain base=stdbrain size=0x4f0
+template skeletonbrain base=stdbrain size=0x4e0
+template skeletonsword base=agent size=0x380
+  { skeletonsword
+    1 skeletonbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ROLE = hostile !
+    5 INITHLTH = 110
+    5 XZRAD = 0.3
+    { skeletonbrain
+      5 SIGHTRANGE = 16.0
+      5 SIGHTCONE = 130.0
+      5 CLOSEATTACKD0 = 1.5
+      5 CLOSEATTACKD1 = 1.5
+      5 CLOSEATTACKD2 = 1.5
+      5 CLOSEATTACKP0 = 0.33
+      5 CLOSEATTACKP1 = 0.33
+      5 CLOSEATTACKP2 = 0.33
+      5 CLOSEATTACKCNT = 3
+      5 WAITPROB = 0.2
+      5 USENAVMESH = 1
+      5 SKELXPLDE = 1
+      5 BLOODTEXTURE = sfx_bones_abe.psm
+      5 BLOODBITS = 20
+      5 BLOODSCALE = 0.3
+    }
+    { corporeal
+      5 RES = exporteddata/characters/skeleton_sword/skeleton_sword.group
+      5 ANIMS = exporteddata/characters/skeleton_sword/skeleton_sword_apkg.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template smokering base=agent size=0x380
+  { smokering
+    1 smokeringbrain
+    1 corporeal
+    5 ENTCOLFLG=1217
+    { smokeringbrain
+    }
+    { corporeal
+      5 MODELHIDDEN = 1
+      5 RES = exporteddata/objects/all_smokering/all_smokering.group
+    }
+  }
+template smokeringbrain base=brain size=0x1a0
+template soundplayer base=entunit size=0x70
+template soundrail base=entcomposite size=0x380
+  { soundrail
+    1 soundplayer
+    { soundplayer
+      5 FARUPD=1
+      5 VFARUPD=1
+    }
+  }
+template speartrail base=entcomposite size=0x360
+  { speartrail
+    1 trailbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { trailbrain
+      5 TRAILSPARTICLES = 0
+      5 TRAILSSURFACE = 1
+      5 TRAILSSPRITE = 0
+      5 FARUPD = 1
+      5 VFARUPD = 1
+    }
+  }
+template speechtrigger base=entcomposite size=0x360
+  { speechtrigger
+    1 speechtriggerbrain
+    5 ENTCOLFLG = 1233
+  }
+template speechtriggerbrain base=stdbrain size=0x270
+template stainglassheartbrain base=brain size=0x170
+template starrunehand base=agent size=0x380
+  { starrunehand
+    1 runehandbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 66769
+    { runehandbrain
+      5 RUNE=4
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_rune_hand/all_rune_hand.group
+      5 ANIMS = exporteddata/objects/all_rune_hand/all_rune_hand_apkg.group
+    }
+    { directanimmotion
+      5 SIMPLE = 1
+    }
+    { soundplayer
+    }
+  }
+template statuefountain base=agent size=0x380
+  { statuefountain
+    1 statuefountainbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG=1217
+    { statuefountainbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sv_fountain/sv_fountain.group
+      5 ANIMS = exporteddata/objects/sv_fountain/sv_fountain_apkg.group
+    }
+    { directanimmotion
+    }
+  }
+template statuefountainbrain base=brain size=0xa80
+template stdbrain base=brain size=0x4e0
+template steamexplosion base=entcomposite size=0x360
+  { steamexplosion
+    1 explosionbrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG = 1233
+    5 ROLE = hostile explosion !
+    { explosionbrain
+      5 VFARUPD = 1
+      5 DURATION=4.0
+      5 DAMAGE=0.0
+      5 CREATESSPRITE = 0
+      5 CREATESPARTICLES = 1
+      5 CREATESSHELL = 0
+      5 PARTICLETYPE=7
+      5 PARTICLECOLOURSTART = 1.0,1.0,1.0
+      5 PARTICLECOLOUREND = 1.0,1.0,1.0
+      5 PARTICLESCALE = 	2.0
+    }
+    { corporeal
+    }
+  }
+template stonewolf base=agent size=0x380
+  { stonewolf
+    1 stonewolfbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 INITHLTH=540
+    5 XZRAD=0.5
+    5 ROLE = hostile !
+    5 ENTCOLFLG = 1152
+    5 SURFTYPE = 3
+    { stonewolfbrain
+      5 VFARUPD = 1
+      5 FARUPD = 1
+      5 USENAVMESH = 0
+    }
+    { corporeal
+      5 RES = exporteddata/characters/stone_wolf/stone_wolf.group
+      5 ANIMS = exporteddata/characters/stone_wolf/stone_wolf_apkg.group
+      5 SSHAD=1
+      5 VFARUPD = 1
+      5 FARUPD = 1
+    }
+    { directanimmotion
+      5 USPD = 50.0
+      5 VFARUPD = 1
+      5 FARUPD = 1
+    }
+    { soundplayer
+    }
+  }
+template stonewolfbrain base=brain size=0x380
+template sunkenbridge base=agent size=0x380
+  { sunkenbridge
+    1 sunkenbridgebrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=33985
+    5 UPDPRI = 40
+    5 COLDATARAD=10.0
+    { sunkenbridgebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/ad_sunken_bridge/ad_sunken_bridge.group
+      5 RADIUS = 10.0
+    }
+    { collision
+    }
+  }
+template sunkenbridgebrain base=brain size=0x160
+template swingingdummy base=agent size=0x380
+  { swingingdummy
+    1 swingingdummybrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1216
+    5 ROLE = hostile !
+    5 TGTOFFSET=0.0, -3.0, 0.0
+    { swingingdummybrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/dc_dummy/dc_dummy.group
+    }
+    { soundplayer
+    }
+  }
+template swingingdummybrain base=brain size=0x1c0
+template switch base=agent size=0x380
+  { switch
+    1 switchbrain
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG = 66769
+    { switchbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_switch/all_switch.group
+    }
+    { soundplayer
+    }
+  }
+template switchbrain base=brain size=0x1c0
+template target base=agent size=0x3a0
+  { target
+    1 targetbrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = POINTS
+      5 QUANTITY = 70
+    }
+    { corporeal
+      5 RES = exporteddata/objects/af_archery_target_01/af_archery_target_01.group
+    }
+    { collision
+    }
+  }
+template target1 base=agent size=0x3a0
+  { target1
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = POINTS
+      5 QUANTITY = 30
+      5 HITSOUND = target_hit_med
+      5 POPUPSOUND = target_popup
+      5 DROPSOUND = target_drop
+      5 MOVESOUND = target_move
+    }
+    { corporeal
+      5 RES = exporteddata/objects/af_archery_target_06/af_archery_target_06.group
+    }
+    { collision
+    }
+  }
+template target2 base=agent size=0x3a0
+  { target2
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = POINTS
+      5 QUANTITY = 5
+      5 HITSOUND = target_hit_med
+      5 POPUPSOUND = target_popup
+      5 DROPSOUND = target_drop
+      5 MOVESOUND = target_move
+    }
+    { corporeal
+      5 RES = exporteddata/objects/af_archery_target_01/af_archery_target_01.group
+    }
+    { collision
+    }
+  }
+template target3 base=agent size=0x3a0
+  { target3
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = POINTS
+      5 QUANTITY = 7
+      5 HITSOUND = target_hit_med
+      5 POPUPSOUND = target_popup
+      5 DROPSOUND = target_drop
+      5 MOVESOUND = target_move
+    }
+    { corporeal
+      5 RES = exporteddata/objects/af_archery_target_02/af_archery_target_02.group
+    }
+    { collision
+    }
+  }
+template target4 base=agent size=0x3a0
+  { target4
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = POINTS
+      5 QUANTITY = 10
+      5 HITSOUND = target_hit_med
+      5 POPUPSOUND = target_popup
+      5 DROPSOUND = target_drop
+      5 MOVESOUND = target_move
+    }
+    { corporeal
+      5 RES = exporteddata/objects/af_archery_target_03/af_archery_target_03.group
+    }
+    { collision
+    }
+  }
+template target5 base=agent size=0x3a0
+  { target5
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = POINTS
+      5 QUANTITY = 15
+      5 HITSOUND = target_hit_med
+      5 POPUPSOUND = target_popup
+      5 DROPSOUND = target_drop
+      5 MOVESOUND = target_move
+    }
+    { corporeal
+      5 RES = exporteddata/objects/af_archery_target_04/af_archery_target_04.group
+    }
+    { collision
+    }
+  }
+template target6 base=agent size=0x3a0
+  { target6
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = POINTS
+      5 QUANTITY = 20
+      5 HITSOUND = target_hit_med
+      5 POPUPSOUND = target_popup
+      5 DROPSOUND = target_drop
+      5 MOVESOUND = target_move
+    }
+    { corporeal
+      5 RES = exporteddata/objects/af_archery_target_05/af_archery_target_05.group
+    }
+    { collision
+    }
+  }
+template targetbell base=agent size=0x3a0
+  { targetbell
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=1217
+    5 XZRAD = 0.25
+    { targetbrain
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 USENAVMESH=1
+      5 USENAVMESHASTARGET=1
+      5 QUANTITY = 70
+      5 ANIMATE = 0
+      5 HITSOUND = bell_ring
+    }
+    { corporeal
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 RES = exporteddata/objects/gb_bell/gb_bell.group
+      5 ANIMS = exporteddata/objects/gb_bell/gb_bell_swing_apkg.group
+    }
+    { collision
+    }
+    { soundplayer
+    }
+  }
+template targetbrain base=brain size=0x280
+template targetduck base=agent size=0x3a0
+  { targetduck
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 REWARD = POINTS
+      5 QUANTITY = 1
+      5 POPUPANIM = duck_fly.anim
+      5 DROPANIM = duck_death.anim
+      5 SMASHANIM = duck_death.anim
+      5 IDLEANIM = duck_fly.anim
+    }
+    { corporeal
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 RES = exporteddata/characters/duck/duck.group
+      5 ANIMS = exporteddata/characters/duck/duck_apkg.group
+    }
+    { collision
+      5 FARUPD= 1
+      5 VFARUPD= 1
+    }
+    { directanimmotion
+      5 FARUPD= 1
+      5 VFARUPD= 1
+    }
+    { soundplayer
+    }
+  }
+template targetgalleon base=agent size=0x3a0
+  { targetgalleon
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = POINTS
+      5 QUANTITY = 20
+      5 HITSOUND = target_hit_med
+      5 POPUPSOUND = target_popup
+      5 DROPSOUND = target_drop
+      5 MOVESOUND = target_move
+    }
+    { corporeal
+      5 RES = exporteddata/objects/tt_trebuchet_galleon/tt_trebuchet_galleon.group
+    }
+    { collision
+    }
+  }
+template targetgoldred base=agent size=0x3a0
+  { targetgoldred
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = GOLD
+      5 QUANTITY = 20
+      5 HITSOUND = target_hit_med
+      5 POPUPSOUND = target_popup
+      5 DROPSOUND = target_drop
+      5 MOVESOUND = target_move
+    }
+    { corporeal
+      5 RES = exporteddata/objects/af_archery_gold_red/af_archery_gold_red.group
+    }
+    { collision
+    }
+  }
+template targettimeorange base=agent size=0x3a0
+  { targettimeorange
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = TIME
+      5 QUANTITY = 20
+      5 HITSOUND = target_hit_med
+      5 POPUPSOUND = target_popup
+      5 DROPSOUND = target_drop
+      5 MOVESOUND = target_move
+    }
+    { corporeal
+      5 RES = exporteddata/objects/af_archery_time_orange/af_archery_time_orange.group
+    }
+    { collision
+    }
+  }
+template targettimered base=agent size=0x3a0
+  { targettimered
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = TIME
+      5 QUANTITY = 30
+      5 HITSOUND = target_hit_med
+      5 POPUPSOUND = target_popup
+      5 DROPSOUND = target_drop
+      5 MOVESOUND = target_move
+    }
+    { corporeal
+      5 RES = exporteddata/objects/af_archery_time_red/af_archery_time_red.group
+    }
+    { collision
+    }
+  }
+template targettimeyellow base=agent size=0x3a0
+  { targettimeyellow
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 REWARD = TIME
+      5 QUANTITY = 10
+      5 HITSOUND = target_hit_med
+      5 POPUPSOUND = target_popup
+      5 DROPSOUND = target_drop
+      5 MOVESOUND = target_move
+    }
+    { corporeal
+      5 RES = exporteddata/objects/af_archery_time_yellow/af_archery_time_yellow.group
+    }
+    { collision
+    }
+  }
+template targettingicon base=entcomposite size=0x440
+  { targettingicon
+    1 soundplayer
+    1 corporeal
+    { soundplayer
+      5 SRS = sound/989_banks/generic/generic.bnk !
+    }
+    { corporeal
+      5 SSHAD = 1
+    }
+  }
+template targetzarokgoldred base=agent size=0x3a0
+  { targetzarokgoldred
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 REWARD = GOLD
+      5 QUANTITY = 20
+      5 HITSOUND = zarok_drop
+      5 POPUPSOUND = zarok_popup
+      5 DROPSOUND = zarok_drop
+    }
+    { corporeal
+      5 RES = exporteddata/objects/wz_zarok_gold_red/wz_zarok_gold_red.group
+    }
+    { collision
+    }
+  }
+template targetzaroktimeyellow base=agent size=0x3a0
+  { targetzaroktimeyellow
+    1 targetbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { targetbrain
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 REWARD = TIME
+      5 QUANTITY = 10
+      5 HITSOUND = zarok_drop
+      5 POPUPSOUND = zarok_popup
+      5 DROPSOUND = zarok_drop
+    }
+    { corporeal
+      5 RES = exporteddata/objects/wz_zarok_time_yellow/wz_zarok_time_yellow.group
+    }
+    { collision
+    }
+  }
+template testentity base=entcomposite size=0x360
+  { testentity
+    1 testentitybrain
+    1 corporeal
+    1 directmotion
+    { testentitybrain
+      5 USENAVMESH = 1
+    }
+    { directmotion
+      5 ACC = 1.0
+      5 DEC = 0.5
+    }
+  }
+template testentitybrain base=brain size=0x1c0
+template tiltingplatformbrain base=brain size=0x1a0
+template timerunehand base=agent size=0x380
+  { timerunehand
+    1 runehandbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 66769
+    { runehandbrain
+      5 RUNE=3
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_rune_hand/all_rune_hand.group
+      5 ANIMS = exporteddata/objects/all_rune_hand/all_rune_hand_apkg.group
+    }
+    { directanimmotion
+      5 SIMPLE = 1
+    }
+    { soundplayer
+    }
+  }
+template torch base=agent size=0x610
+  { torch
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG=1233
+    { corporeal
+    }
+    { soundplayer
+    }
+  }
+template tortureplinth base=agent size=0x380
+  { tortureplinth
+    1 tortureplinthbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG=66753
+    5 XZRAD = 1.0
+    { tortureplinthbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/ia_torture_plinth_exploded/ia_torture_plinth_exploded.group
+      5 ANIMS = exporteddata/objects/ia_torture_plinth_exploded/ia_torture_plinth_exploded_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { collision
+    }
+  }
+template tortureplinthbrain base=brain size=0x160
+template trail base=entcomposite size=0x360
+  { trail
+    1 trailbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { trailbrain
+      5 TRAILSPARTICLES = 0
+      5 TRAILSSURFACE = 1
+      5 TRAILSSPRITE = 0
+      5 FARUPD = 1
+      5 VFARUPD = 1
+    }
+  }
+template trailbrain base=brain size=0x410
+template trampoline base=agent size=0x380
+  { trampoline
+    1 trampolinebrain
+    1 corporeal
+    5 ENTCOLFLG=1217
+    { trampolinebrain
+    }
+    { corporeal
+      5 MODELHIDDEN = 1
+      5 RES = exporteddata/objects/gs_trampoline/gs_trampoline.group
+    }
+  }
+template trampolinebrain base=brain size=0x680
+template trebuchet base=entcomposite size=0x580
+  { trebuchet
+    1 corporeal
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/tt_trebuchet_machine/tt_trebuchet_machine.group
+    }
+  }
+template trebuchetarm base=entcomposite size=0x380
+  { trebuchetarm
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/tt_trebuchet_arm/tt_trebuchet_arm.group
+    }
+  }
+template trebuchethr base=agent size=0x380
+  { trebuchethr
+    1 trebuchethrbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG = 1
+    { trebuchethrbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_trebuchet/all_trebuchet.group
+      5 ANIMS = exporteddata/objects/all_trebuchet/all_trebuchet_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { collision
+    }
+  }
+template trebuchethrbrain base=brain size=0x170
+template undeadwarrior base=agent size=0x380
+  { undeadwarrior
+    1 undeadwarriorbrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    1 firebodyeffect
+    5 INITHLTH = 300
+    5 ROLE = hostile !
+    5 XZRAD = 1.4
+    5 SURFTYPE = 16
+    { undeadwarriorbrain
+      5 BURNAMOUNT = 100.0
+      5 ALLRNGATTPROB = 0.025
+      5 CHASERUNRANGE = 10.0
+      5 CLOSEATTACKD0 = 2.6
+      5 CLOSEATTACKCNT = 1
+      5 CONFINEMOVE = 45.0
+      5 RANGEATTACKCNT = 1
+      5 RANGEATTACKD0 = 15.0
+      5 RNGATTINT = 5.0
+      5 RANGEDEL0 = 1.0
+      5 RANGEREP0 = 2
+      5 SIGHTRANGE = 20.0
+      5 SIGHTCONE = 300.0
+      5 USENAVMESH = 1
+      5 WAITPROB = 0.2
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/undead_warrior/undead_warrior_apkg.group
+      5 RES = exporteddata/characters/undead_warrior/undead_warrior.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { collision
+    }
+    { directanimmotion
+      5 DEATHCONF=1
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template undeadwarriorbrain base=stdbrain size=0x510
+template voodoowitch base=entcomposite size=0x380
+  { voodoowitch
+    1 minigamelauncherbrain
+    1 soundplayer
+    1 collision
+    1 minigamecamera
+    5 ENTCOLFLG=66753
+    { minigamelauncherbrain
+      5 SPEECH = e_00109_cs.vag
+      5 TEXT = play_mystery
+      5 REALM = -1
+      5 VARIATION = 0
+      5 WITCH= 1
+    }
+    { minigamecamera
+      5 STARTACTIVE= 1
+      5 FARUPD= 1
+      5 VFARUPD= 1
+      5 BASISYOFFSET= 0.0
+      5 HOTSPOT= 1
+      5 PLUGIN=<MINIGAME_FIXED>
+      5 DEFPLUGIN= 7
+    }
+    { soundplayer
+    }
+  }
+template waveexplosion base=entcomposite size=0x360
+  { waveexplosion
+    1 explosionbrain
+    1 corporeal
+    1 collision
+    5 ENTCOLFLG = 1233
+    5 ROLE = hostile explosion !
+    { explosionbrain
+      5 VFARUPD = 1
+      5 DURATION=4.0
+      5 DAMAGE=0.0
+      5 CREATESSPRITE = 1
+      5 CREATESPARTICLES = 0
+      5 CREATESSHELL = 0
+      5 SPRITENAME = sfx_watersplash_abe.psm
+      5 SPRITESTARTFADE=0.0
+      5 DECALSPRITE=0
+      5 SPRITECOLOUR = 	1.0,1.0,1.0
+      5 SPRITESTARTSCALE = 	0.5
+      5 SPRITEENDSCALE = 	6.0
+      5 SPRITEDURATION = 	0.5
+    }
+    { corporeal
+    }
+  }
+template weapon base=entcomposite size=0x700
+  { weapon
+    5 ROLE=weapon player !
+    5 UPDPRI = 100
+  }
+template weaponarm base=weapon size=0x700
+  { weaponarm
+    1 corporeal
+    1 collision
+    5 ROLE = player !
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/all_arm/all_arm.group
+    }
+    { collision
+      5 SURF = 0
+      5 STATE = 0
+      5 BLKMOT = 0
+    }
+  }
+template weaponaxe base=weapon size=0x700
+  { weaponaxe
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ROLE = player !
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/all_battleaxe/all_battleaxe.group
+    }
+    { collision
+      5 SURF = 0
+      5 STATE = 0
+      5 BLKMOT = 0
+    }
+    { soundplayer
+    }
+  }
+template weaponclub base=weapon size=0x710
+  { weaponclub
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ROLE = player weapon !
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/all_club/all_club.group
+    }
+    { collision
+      5 SURF = 0
+      5 STATE = 1
+      5 BLKMOT = 0
+    }
+    { soundplayer
+    }
+  }
+template weaponcrossbow base=weapon size=0x700
+  { weaponcrossbow
+    1 corporeal
+    5 ROLE = player !
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/all_crossbow/all_crossbow.group
+    }
+  }
+template weaponhammer base=weapon size=0x7a0
+  { weaponhammer
+    1 corporeal
+    1 collision
+    5 ROLE = player !
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/all_hammer/all_hammer.group
+    }
+    { collision
+      5 SURF = 0
+      5 STATE = 0
+      5 BLKMOT = 0
+    }
+  }
+template weaponlongbow base=weapon size=0x700
+  { weaponlongbow
+    1 corporeal
+    5 ROLE = player !
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/all_longbow/all_longbow.group
+    }
+  }
+template weaponpickup base=pickup size=0x360
+  { weaponpickup
+    1 weaponpickupbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { weaponpickupbrain
+      5 QUANTITY = 1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/all_club/all_club.group
+    }
+  }
+template weaponpickupbrain base=pickupbrain size=0x350
+template weaponspear base=weapon size=0x700
+  { weaponspear
+    1 corporeal
+    1 collision
+    5 ROLE = player !
+    5 ENTCOLFLG = 1233
+    { corporeal
+      5 RES = exporteddata/objects/all_spear/all_spear.group
+    }
+    { collision
+      5 SURF = 0
+      5 STATE = 0
+      5 BLKMOT = 0
+    }
+  }
+template welltentacle base=agent size=0x380
+  { welltentacle
+    1 welltentaclebrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    { welltentaclebrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/pg_well_tentacle/pg_well_tentacle.group
+      5 ANIMS = exporteddata/objects/pg_well_tentacle/pg_well_tentacle_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template welltentaclebrain base=brain size=0x150
+template wheatdemon base=agent size=0x380
+  { wheatdemon
+    1 wheatdemonbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 ENTCOLFLG = 524288
+    { wheatdemonbrain
+      5 FARUPD=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 VFARREND=1
+      5 WAITPROB = 0.5
+      5 WAITTIME = 3.0
+      5 SIGHTRANGE = 99.0
+      5 SIGHTCONE = 360.0
+      5 RUNSPEED = 40.0
+      5 CLOSEATTACKD0 = 0.0
+      5 ALWAYSSEE = 1
+    }
+    { corporeal
+      5 FARUPD=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 VFARREND=1
+      5 RES = exporteddata/characters/wheat_demon/wheat_demon.group
+      5 ANIMS = exporteddata/characters/wheat_demon/wheat_demon_apkg.group
+    }
+    { directanimmotion
+      5 ACC = 50.0
+      5 DEC = 100.0
+      5 FARUPD=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 VFARREND=1
+    }
+    { soundplayer
+    }
+    { collision
+    }
+  }
+template wheatdemonbrain base=stdbrain size=0x540
+template whiteroot base=agent size=0x380
+  { whiteroot
+    1 whiterootbrain
+    1 corporeal
+    1 collision
+    1 directanimmotion
+    1 soundplayer
+    5 ENTCOLFLG = 67110081
+    { whiterootbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/pg_white_root_01/pg_white_root_01.group
+      5 ANIMS = exporteddata/objects/pg_white_root_01/pg_white_root_01_apkg.group
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+  }
+template whiterootbrain base=brain size=0x180
+template windmill base=agent size=0x380
+  { windmill
+    1 windmillbrain
+    1 corporeal
+    { windmillbrain
+    }
+    { corporeal
+      5 RES = exporteddata/objects/sf_windmill/sf_windmill.group
+      5 RADIUS = 15.0
+    }
+  }
+template windmillbrain base=brain size=0x170
+template witchescaldron base=agent size=0x380
+  { witchescaldron
+    1 corporeal
+    { corporeal
+      5 RES = exporteddata/objects/all_witches_cauldron/all_witches_cauldron.group
+    }
+  }
+template wolfbrain base=stdbrain size=0x4e0
+template wolfcontroller base=agent size=0x380
+  { wolfcontroller
+    1 wolfcontrollerbrain
+    1 soundplayer
+    5 ENTCOLFLG = 1233
+    { wolfcontrollerbrain
+    }
+    { soundplayer
+    }
+  }
+template wolfcontrollerbrain base=brain size=0x8b0
+template wolfguardian base=agent size=0x380
+  { wolfguardian
+    1 wolfguardianbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    5 INITHLTH=160
+    5 XZRAD=0.5
+    5 ROLE = hostile !
+    5 SURFTYPE = 16
+    { wolfguardianbrain
+      5 VFARUPD = 1
+      5 FARUPD = 1
+      5 USENAVMESH = 1
+    }
+    { corporeal
+      5 VFARUPD = 1
+      5 FARUPD = 1
+      5 RES = exporteddata/characters/wolf/wolf.group
+      5 ANIMS = exporteddata/characters/wolf/wolf_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 VFARUPD = 1
+      5 FARUPD = 1
+      5 USPD = 50.0
+    }
+    { soundplayer
+    }
+  }
+template wolfguardianbrain base=brain size=0x360
+template wolftrail base=entcomposite size=0x360
+  { wolftrail
+    1 trailbrain
+    1 corporeal
+    5 ENTCOLFLG = 1233
+    { trailbrain
+      5 TRAILSPARTICLES = 0
+      5 TRAILSSURFACE = 1
+      5 TRAILSSPRITE = 0
+      5 FARUPD = 1
+      5 VFARUPD = 1
+    }
+    { corporeal
+    }
+  }
+template zarok base=agent size=0x380
+  { zarok
+    1 zarokbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    5 XZRAD = 0.8
+    5 ROLE = friend !
+    5 ENTCOLFLG = 1217
+    5 SURFTYPE = 16
+    { zarokbrain
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { corporeal
+      5 RES = exporteddata/characters/zarok/zarok.group
+      5 ANIMS = exporteddata/characters/zarok/zarok_apkg.group
+      5 VFARREND=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { directanimmotion
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { soundplayer
+    }
+  }
+template zarokbrain base=brain size=0x160
+template zarokslime base=entcomposite size=0x660
+  { zarokslime
+    1 soundplayer
+    5 SURG = exporteddata/objects/zarok_slime/zarok_slime.group !
+    5 ENTCOLFLG = 17
+    { soundplayer
+    }
+  }
+template zlfloor base=agent size=0x380
+  { zlfloor
+    1 zlfloorbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=67142801
+    5 COLDATARAD=4.0
+    5 UPDPRI = 40
+    5 ROLE = friend !
+    { zlfloorbrain
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { corporeal
+      5 VFARREND=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { collision
+    }
+    { soundplayer
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+  }
+template zlfloorbrain base=brain size=0x160
+template zlgatepusher base=agent size=0x380
+  { zlgatepusher
+    1 zlgatepusherbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=1024
+    5 ROLE = friend !
+    { zlgatepusherbrain
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/zl_door_versli_zarok/zl_door_versli_zarok.group
+      5 VFARREND=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { collision
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { soundplayer
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+  }
+template zlgatepusherbrain base=brain size=0x1e0
+template zlmanager base=agent size=0x380
+  { zlmanager
+    1 zlmanagerbrain
+    1 soundplayer
+    5 SURG = exporteddata/objects/zl_manager/zl_manager.group !
+    5 ENTCOLFLG=1024
+    { zlmanagerbrain
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { soundplayer
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+  }
+template zlmanagerbrain base=brain size=0x270
+template zlpusher base=agent size=0x380
+  { zlpusher
+    1 zlpusherbrain
+    1 corporeal
+    1 collision
+    1 soundplayer
+    5 ENTCOLFLG=1024
+    5 ROLE = friend !
+    { zlpusherbrain
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { corporeal
+      5 RES = exporteddata/objects/zl_pusher/zl_pusher.group
+      5 VFARREND=1
+      5 FARREND=1
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { collision
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+    { soundplayer
+      5 VFARUPD=1
+      5 FARUPD=1
+    }
+  }
+template zlpusherbrain base=brain size=0x160
+template zombie base=agent size=0x380
+  { zombie
+    1 zombiebrain
+    1 corporeal
+    1 directanimmotion
+    1 collision
+    1 soundplayer
+    1 firebodyeffect
+    5 ROLE=hostile !
+    5 TGTOFFSET=0.0, 1.5, 0.0
+    5 XZRAD = 0.4
+    5 HEIGHT = 1.95
+    5 INITHLTH = 59
+    { zombiebrain
+      5 BURNAMOUNT = 100.0
+      5 SIGHTRANGE = 10.0
+      5 SIGHTCONE = 160.0
+      5 USENAVMESH = 1
+      5 WAITPROB = 0.08
+    }
+    { corporeal
+      5 ANIMS = exporteddata/characters/zombie_stalker_1/zombie_stalker_1_apkg.group
+      5 RES = exporteddata/characters/zombie_stalker_1/zombie_stalker_1.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 ACC = 2.5
+      5 DEC = 1.5
+      5 TRSTAT = 180.0
+      5 TRMOV = 120.0
+      5 FSPD = 30.0
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template zombie2 base=agent size=0x380
+  { zombie2
+    1 zombiebrain
+    1 corporeal
+    1 directanimmotion
+    1 collision
+    1 soundplayer
+    1 firebodyeffect
+    5 ROLE=hostile !
+    5 TGTOFFSET=0.0, 1.5, 0.0
+    5 XZRAD = 0.4
+    5 HEIGHT = 1.95
+    5 INITHLTH = 65
+    { zombiebrain
+      5 BURNAMOUNT = 100.0
+      5 SIGHTRANGE = 10.0
+      5 SIGHTCONE = 130.0
+      5 USENAVMESH = 1
+      5 WAITPROB = 0.08
+    }
+    { corporeal
+      5 RES = exporteddata/characters/zombie_stalker_2/zombie_stalker_2.group
+      5 ANIMS = exporteddata/characters/zombie_stalker_1/zombie_stalker_1_apkg.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { directanimmotion
+      5 ACC = 2.5
+      5 DEC = 1.5
+      5 TRSTAT = 180.0
+      5 TRMOV = 120.0
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template zombiebrain base=stdbrain size=0x4e0
+template zombieguard base=agent size=0x380
+  { zombieguard
+    1 zombieguardbrain
+    1 corporeal
+    1 directanimmotion
+    1 collision
+    1 soundplayer
+    1 firebodyeffect
+    5 XZRAD=0.6
+    5 ROLE = hostile !
+    5 INITHLTH = 110
+    5 HEIGHT = 3.5
+    { zombieguardbrain
+      5 BURNAMOUNT = 100.0
+      5 SIGHTRANGE = 8.0
+      5 SIGHTCONE = 200.0
+      5 USENAVMESH = 1
+      5 CLOSEATTACKD0 = 2.0
+    }
+    { corporeal
+      5 RES = exporteddata/characters/zombie_guard/zombie_guard.group
+      5 ANIMS = exporteddata/characters/zombie_guard/zombie_guard_apkg.group
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template zombieguardbrain base=stdbrain size=0x4e0
+template zombieheadless base=agent size=0x380
+  { zombieheadless
+    1 zombieheadlessbrain
+    1 corporeal
+    1 directanimmotion
+    1 soundplayer
+    1 collision
+    1 firebodyeffect
+    5 XZRAD=0.6
+    5 ROLE = hostile !
+    5 INITHLTH = 120
+    5 SURFTYPE = 16
+    { zombieheadlessbrain
+      5 BURNAMOUNT = 100.0
+      5 USENAVMESH = 1
+      5 SIGHTRANGE = 11.0
+      5 SIGHTCONE = 160.0
+      5 CLOSEATTACKCNT = 0
+    }
+    { corporeal
+      5 RES = exporteddata/characters/zombie_headless_1/zombie_headless_1.group
+      5 ANIMS = exporteddata/characters/zombie_headless_1/zombie_headless_1_apkg.group
+      5 LIGHTNINGTEXT = lightning_characters_abe.psm
+      5 LIGHTNINGINVTEXT = lightning_characters02_abe.psm
+      5 SSHAD=1
+    }
+    { directanimmotion
+    }
+    { soundplayer
+    }
+    { firebodyeffect
+      5 JOINTNAME = pelvis
+    }
+  }
+template zombieheadlessbrain base=zombiebrain size=0x4e0
