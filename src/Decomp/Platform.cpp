@@ -159,7 +159,7 @@ PSPCALL(sceKernelLibcTime) { UNUSED; uint32_t t = uint32_t(std::time(nullptr)); 
 PSPCALL(sceKernelLibcGettimeofday) {
     UNUSED;
     uint64_t us = uint64_t(std::time(nullptr)) * 1000000 + Micros() % 1000000;
-    if (uint32_t(a0)) { GP<uint32_t> tv(uint32_t(a0)); tv[0] = uint32_t(us / 1000000); tv[1] = uint32_t(us % 1000000); }
+    if (uint32_t(a0)) { GP<uint32_t> tv{uint32_t(a0)}; tv[0] = uint32_t(us / 1000000); tv[1] = uint32_t(us % 1000000); }
     return 0;
 }
 PSPCALL(sceRtcGetCurrentTick) { UNUSED; uint64_t t = 62135596800000000ull + uint64_t(std::time(nullptr)) * 1000000; std::memcpy(g_mem + uint32_t(a0), &t, 8); return 0; }

@@ -29,6 +29,7 @@ void InstallCrashHandler() {
     std::signal(SIGILL, OnCrash);
     std::signal(SIGFPE, OnCrash);
     std::signal(SIGABRT, OnCrash);
+    std::signal(SIGTERM, OnCrash);
 }
 
 bool Boot(const char* prxPath) {
