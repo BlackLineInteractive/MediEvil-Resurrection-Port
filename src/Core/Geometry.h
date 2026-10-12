@@ -10,7 +10,7 @@
 //   MFL1       material flags (decoded by MaterialFlags, port of FUN_002182bc)
 //   FRR0       u16 fragment refs, 0xFFFF-terminated: n = SZR0 pool fragment n,
 //              0x8000|n = n-th FRG0 inside this FMH0
-//   TXI1       per ref {u8 index into TEX0, u8 0xFF}, FF FF-terminated
+//   TXI1       per ref {u8 index into TEX0 (0xFF = none), u8 flags}; as many entries as refs
 //   FRG0...    local fragments
 #include <glm/glm.hpp>
 

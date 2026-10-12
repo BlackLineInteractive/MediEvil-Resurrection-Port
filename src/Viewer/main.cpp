@@ -101,6 +101,7 @@ struct App {
     std::unordered_map<uint32_t, const GpuMesh*> instanceMeshes;   // INST asset hash -> uploaded mesh
     std::vector<DrawItem> items;
     int group = -1;
+    bool verbose = false;
     std::string status;
     glm::vec3 bmin{0}, bmax{0};
     size_t tris = 0;
@@ -139,6 +140,10 @@ struct App {
             SubZone sz;
             if (!sz.Load(gd.Read(a), a.hash)) { ++bad; continue; }
             ++ok;
+            if (verbose)
+                printf("subzone %s: bounds (%.1f %.1f %.1f) - (%.1f %.1f %.1f), %zu instances\n", gd.NameOf(a.hash).c_str(),
+                       sz.mesh.bmin.x, sz.mesh.bmin.y, sz.mesh.bmin.z, sz.mesh.bmax.x, sz.mesh.bmax.y, sz.mesh.bmax.z,
+                       sz.instances.size());
             Place(Upload(sz.mesh, g), glm::mat4(1.0f), sz.mesh.indices.size() / 3);
             if (!withInstances) continue;
             for (const auto& inst : sz.instances) {
@@ -199,6 +204,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     app.gd.LoadNames(namesPath);
+    app.verbose = !shot.empty();
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);

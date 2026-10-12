@@ -72,13 +72,12 @@ uint32_t ReadColor(const uint8_t* p, int col) {
     return r | g << 8 | b << 16 | a << 24;
 }
 
-// TXI1: one {u8 texture, u8 0xFF} per fragment reference, terminated by FF FF.
+// TXI1: one {u8 texture, u8 flags} per fragment reference (count = number of FRR0 refs, the rest is
+// FF FF filler). A texture byte of 0xFF means "no texture" and can appear mid-list. The second byte is
+// 0xFF almost everywhere; 0xFE occurs on some fragments (meaning not known yet).
 std::vector<int> ParseTxi(const Chunk& c) {
     std::vector<int> t;
-    for (uint32_t o = 0; o + 2 <= c.size; o += 2) {
-        if (c.data[o] == 0xFF && c.data[o + 1] == 0xFF) break;
-        t.push_back(c.data[o]);
-    }
+    for (uint32_t o = 0; o + 2 <= c.size; o += 2) t.push_back(c.data[o] == 0xFF ? -1 : c.data[o]);
     return t;
 }
 

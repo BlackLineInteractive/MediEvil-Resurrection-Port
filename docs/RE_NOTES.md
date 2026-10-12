@@ -146,23 +146,23 @@ start when game restarts).
 - Third-party code: SCE RT DME/Medius (multiplayer middleware, `$Header: /projects/rtime/CVS/dme_*`) - do not port.
 - Uppercase entity attribute keys (`CLDLIFE`, `CRYATTTIME`, `COLLSCALE`, ...) - used by ENTS chunks.
 
-## 10. Порт: підзона, розстановка, матеріали, фліпбуки (`src/Core/World.*`)
-| main.prx | C++ | Що |
+## 10. Port: Subzones, Placement, Materials, Flipbooks (`src/Core/World.*`)
+| main.prx | C++ | Description |
 |---|---|---|
-| `FUN_001f651c` CSubZone_Load | `SubZone::Load` | SZR0 пул → OCT0 → INS0 |
+| `FUN_001f651c` CSubZone_Load | `SubZone::Load` | SZR0 pool -> OCT0 -> INS0 |
 | `FUN_001f68f8` CSubZone_LoadInstances | `LoadInstances` | INL4/INN0/INM1 |
-| `FUN_001f6d08` | `SubZone::InstanceModelHash` | ім'я `"<subzone>_<model>.inst"` |
-| `FUN_002182bc` CMeshHolder_SetMaterial | `MaterialFlags::Decode` | біти MFL1 |
+| `FUN_001f6d08` | `SubZone::InstanceModelHash` | name `"<subzone>_<model>.inst"` |
+| `FUN_002182bc` CMeshHolder_SetMaterial | `MaterialFlags::Decode` | MFL1 bits |
 
-- **FRR0 `0x8000|n`** = n-й FRG0 всередині того самого FMH0 (у SUBZ і INST). Їх пропуск давав діри в рельєфі.
-- **INS0**: `INL4` = `u32 n; float lod[n]; u16 mode[n] (low byte: -1 нема, 0 завжди, інакше за дистанцією);
-  імена` (номери на кшталт `000048`); `INN0` = u16 індекс моделі на екземпляр; `INM1` = 'PAD' + 2×mat4 на
-  екземпляр (перша — світова; у другу гра пише 1/масштаб рядків).
-- Ім'я INST формується з імені підзони, але рядок знати не треба: `NameHashStripSuffix(hash(SUBZ), ".subz")`
-  дає стан хешу префікса (перевірено: префікс + ".subz" == хеш SUBZ).
-- **INST** = BOX0, DPD0, OCT0{FMH0 з локальними FRG0}, TEX0.
-- **TEX0**: байт-тип перед ім'ям: `0x03` PSM, `0x23` ('#') FLIP.
-- **FLIP**: `'FLIP', u32 кадрів, u32 fps, u32 крок`, далі кадри — повні PSM0. Вода = `wateranim_abe_flip.flip`.
-- Graveyard: 2 підзони, 240 екземплярів, 0 відсутніх моделей і текстур.
-- TODO: блендинг береться з альфи текстури — справжній стан GE з MFL1 (byte8/mode) ще не зіставлено.
-  Могила для викопування — ігрова сутність (ENTS), не статичний екземпляр.
+- **FRR0 `0x8000|n`** = n-th FRG0 inside the same FMH0 (in SUBZ and INST). Skipping these caused holes in terrain.
+- **INS0**: `INL4` = `u32 n; float lod[n]; u16 mode[n] (low byte: -1 none, 0 always, otherwise distance-based);
+  names` (numeric IDs like `000048`); `INN0` = u16 model index per instance; `INM1` = PAD + 2xmat4 per
+  instance (first is world transform; second holds 1/row scales computed by the game).
+- INST name is constructed from the subzone name, but the raw string is not required: `NameHashStripSuffix(hash(SUBZ), ".subz")`
+  yields the prefix hash state (verified: prefix + ".subz" == SUBZ hash).
+- **INST** = BOX0, DPD0, OCT0{FMH0 with local FRG0}, TEX0.
+- **TEX0**: type byte before name: `0x03` PSM, `0x23` (#) FLIP.
+- **FLIP**: `'FLIP', u32 frameCount, u32 fps, u32 step`, followed by frames (each a full PSM0). Water = `wateranim_abe_flip.flip`.
+- Graveyard: 2 subzones, 240 instances, 0 missing models and textures.
+- TODO: blending currently relies on texture alpha - actual GE state from MFL1 (byte8/mode) is not yet mapped.
+  Diggable grave is a game entity (ENTS), not a static instance.
