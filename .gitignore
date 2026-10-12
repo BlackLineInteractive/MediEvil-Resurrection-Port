@@ -7,17 +7,10 @@
 # ------------------------------------------------------------------------------
 # Retail game ISOs and disc images
 iso/
-*.iso
-*.cso
-*.chd
-*.cue
-*.img
-*.mdf
-*.mds
-*.pbp
 
 # Extracted retail ISO filesystem (PSP_GAME, USRDIR, SYSDIR, PMF movies, PRX modules)
 extracted/
+extracted*/
 
 # Extracted raw game assets from gamedata.bin (PSM models, textures, BNK audio, levels)
 assets/

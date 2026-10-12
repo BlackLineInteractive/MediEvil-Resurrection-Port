@@ -113,3 +113,11 @@ cmake -S . -B build -G Ninja && cmake --build build
 ./build/medievil-viewer --group 2 --shot out.png # offscreen level render to PNG
 ./build/medievil-viewer --model all_switch.mesh --shot out.png
 ```
+
+## 8. Prototype v0.26 (Feb 15, 2005)
+`iso/proto/Medievil 0.26 (Feb 15, 2005).iso` -> `extracted_proto026/` (file list: `docs/iso_filelist_proto026.txt`).
+- Executable in `SYSDIR/BOOT.BIN` (unencrypted ELF), no standalone `main.prx`. `.text` 0x2A9DD4 (retail: 0x2C60C0).
+- **Stripped symbols**: `.symtab` 0x10, DWARF absent - stripped identically to retail. No RTTI either.
+- 522 strings not present in retail: devkit screenshot paths `host0:%s_z%04u.tga`, `jump_to_level`,
+  `select_language`, `Persistent data at 0x%0X`, `Text Message: %s`, sounds/effects cut from retail.
+- `gamedata.bin` 506 MB, header `TOCS1` (retail uses `TOCS0`): TOC layout is likely slightly different.
