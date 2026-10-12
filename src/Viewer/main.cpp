@@ -7,11 +7,13 @@
 #include "Core/GameData.h"
 #include "Core/Geometry.h"
 #include "Core/World.h"
+#include "Core/Entity.h"
 #include "Viewer/Renderer.h"
 
 #include <GL/glew.h>
 #include <SDL.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl2.h>
@@ -99,6 +101,10 @@ struct App {
     Renderer ren;
     std::vector<std::unique_ptr<GpuMesh>> meshes;
     std::unordered_map<uint32_t, const GpuMesh*> instanceMeshes;   // INST asset hash -> uploaded mesh
+    std::unordered_map<std::string, const GpuMesh*> entityMeshes;  // corporeal RES base name -> MESH
+    std::unordered_map<const GpuMesh*, size_t> meshTris;
+    TemplateDB templates;
+    std::vector<Entity> entities;
     std::vector<DrawItem> items;
     int group = -1;
     bool verbose = false;
@@ -109,6 +115,9 @@ struct App {
     void Clear() {
         items.clear();
         instanceMeshes.clear();
+        entityMeshes.clear();
+        meshTris.clear();
+        entities.clear();
         meshes.clear();
         tris = 0;
         bmin = glm::vec3(1e30f);
@@ -116,7 +125,41 @@ struct App {
     }
     const GpuMesh* Upload(const MeshData& m, int g) {
         meshes.push_back(ren.Upload(m, gd, g));
+        meshTris[meshes.back().get()] = m.indices.size() / 3;
         return meshes.back().get();
+    }
+    // corporeal RES "x.group" -> the model inside the group: "x.mesh" for static objects,
+    // "x.skel" (SKE0 skeleton + skinned MOD0, drawn in bind pose for now) for animated ones; cached per level
+    const GpuMesh* EntityMesh(const std::string& base, int g) {
+        auto it = entityMeshes.find(base);
+        if (it != entityMeshes.end()) return it->second;
+        const GpuMesh* gm = nullptr;
+        for (const char* ext : {".mesh", ".skel"}) {
+            const Asset* a = gd.Find(base + ext, g);
+            if (!a) continue;
+            MeshData md;
+            if (LoadModel(gd.Read(*a), md)) { gm = Upload(md, g); break; }
+        }
+        return entityMeshes[base] = gm;
+    }
+    void LoadEntitiesOfGroup(int g, int& placed, int& noModel, int& missing, int& hidden) {
+        for (const auto& a : gd.Groups()[g].assets) {
+            if (a.kind != 1 || a.type != FourCC("ENTS")) continue;
+            size_t first = entities.size();
+            LoadEntities(gd.Read(a), &templates, entities);
+            for (size_t i = first; i < entities.size(); ++i) {
+                const Entity& e = entities[i];
+                // HIB=1: hibernating until another entity wakes it (e.g. the gold under a grave)
+                if (e.Get("HIB").value_or("0") == "1") { ++hidden; continue; }
+                std::string base = e.ResourceBaseName();
+                if (base.empty()) { ++noModel; continue; }
+                const GpuMesh* m = EntityMesh(base, g);
+                if (!m) { ++missing; continue; }
+                glm::mat4 world = glm::translate(glm::mat4(1.0f), e.Position()) * glm::mat4_cast(e.Rotation());
+                Place(m, world, meshTris[m]);
+                ++placed;
+            }
+        }
     }
     void Place(const GpuMesh* mesh, const glm::mat4& model, size_t triCount) {
         items.push_back({mesh, model});
@@ -130,7 +173,7 @@ struct App {
         }
     }
     // Every SUBZ of a group (static geometry + placed instances), loaded with the ported CSubZone code.
-    void LoadLevel(int g, bool withInstances) {
+    void LoadLevel(int g, bool withInstances, bool withEntities) {
         Clear();
         group = g;
         int ok = 0, bad = 0, placed = 0, missing = 0;
@@ -166,8 +209,12 @@ struct App {
                 ++placed;
             }
         }
+        int ePlaced = 0, eNoModel = 0, eMissing = 0, eHidden = 0;
+        if (withEntities) LoadEntitiesOfGroup(g, ePlaced, eNoModel, eMissing, eHidden);
         status = "group " + std::to_string(g) + ": " + std::to_string(ok) + " subzones (" + std::to_string(bad) +
                  " failed), " + std::to_string(placed) + " instances (" + std::to_string(missing) + " missing), " +
+                 std::to_string(entities.size()) + " entities (" + std::to_string(ePlaced) + " drawn, " +
+                 std::to_string(eHidden) + " hibernating, " + std::to_string(eNoModel) + " no model, " + std::to_string(eMissing) + " mesh not found), " +
                  std::to_string(tris) + " tris, missing textures " + std::to_string(ren.MissingTextures());
     }
     bool LoadModelAsset(const Asset& a, int g) {
@@ -196,6 +243,8 @@ int main(int argc, char** argv) {
     std::string modelName = Arg(argc, argv, "--model");
     int startGroup = std::stoi(Arg(argc, argv, "--group", "-1"));
     bool withInstances = Arg(argc, argv, "--instances", "1") != "0";
+    bool withEntities = Arg(argc, argv, "--entities", "1") != "0";
+    std::string templatesPath = Arg(argc, argv, "--templates", "assets/entity_templates.txt");
 
     App app;
     std::string err;
@@ -204,6 +253,8 @@ int main(int argc, char** argv) {
         return 1;
     }
     app.gd.LoadNames(namesPath);
+    if (!app.templates.Load(templatesPath))
+        fprintf(stderr, "no entity templates at %s (run tools/entity_templates.py)\n", templatesPath.c_str());
     app.verbose = !shot.empty();
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
@@ -242,7 +293,7 @@ int main(int argc, char** argv) {
         app.LoadModelAsset(*a, g);
         cam.Frame(app.bmin, app.bmax);
     } else if (startGroup >= 0) {
-        app.LoadLevel(startGroup, withInstances);
+        app.LoadLevel(startGroup, withInstances, withEntities);
         cam.Frame(app.bmin, app.bmax);
     }
     // --at x,y,z [--dist d]: aim the shot camera at a point instead of framing everything
@@ -317,7 +368,8 @@ int main(int argc, char** argv) {
         ImGui::Checkbox("Textures", &textured); ImGui::SameLine();
         ImGui::Checkbox("Vertex colour", &vcolor); ImGui::SameLine();
         ImGui::Checkbox("Wire", &wire);
-        ImGui::Checkbox("Instances (INS0)", &withInstances);
+        ImGui::Checkbox("Instances (INS0)", &withInstances); ImGui::SameLine();
+        ImGui::Checkbox("Entities (ENTS)", &withEntities);
         ImGui::Text("RMB look, WASD/QE move, Shift fast, wheel speed (%.1f)", cam.speed);
         if (ImGui::Button("Frame")) cam.Frame(app.bmin, app.bmax);
         ImGui::Separator();
@@ -329,7 +381,7 @@ int main(int argc, char** argv) {
             ImGui::EndCombo();
         }
         if (ImGui::Button("Load level geometry (all SUBZ)")) {
-            app.LoadLevel(listGroup, withInstances);
+            app.LoadLevel(listGroup, withInstances, withEntities);
             cam.Frame(app.bmin, app.bmax);
         }
         ImGui::InputText("Filter models", filter, sizeof filter);

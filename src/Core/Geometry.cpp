@@ -104,9 +104,11 @@ bool ParseFragment(const Chunk& frg, Fragment& out) {
     if (!stride) stride = L.stride;
     size_t count = 0;
     for (auto n : out.strips) count += n;
-    // FVT1 starts with 'PAD' filler up to 16-byte alignment; the vertices are the tail.
-    if (count * stride > fvt.size) return false;
-    const uint8_t* base = fvt.data + (fvt.size - count * stride);
+    // FVT1 starts with filler ('PAD...' or zeros) up to the next 16-byte boundary *of the asset*
+    // (the game aligns the loaded pointer); some fragments also carry trailing filler.
+    size_t pad = (16 - fvt.OffsetInAsset() % 16) % 16;
+    if (pad + count * stride > fvt.size) return false;
+    const uint8_t* base = fvt.data + pad;
 
     out.verts.resize(count);
     for (size_t i = 0; i < count; ++i) {
@@ -118,7 +120,8 @@ bool ParseFragment(const Chunk& frg, Fragment& out) {
             float w = ReadComp(v + L.texOff + e, L.tex, false, 128.f, 32768.f);
             o.uv = {u * txf[0] + txf[2], w * txf[1] + txf[3]};
         }
-        if (L.colOff >= 0) o.color = ReadColor(v + L.colOff, L.col);
+        // no vertex colour in the format: the GE uses the material colour; 0x80 is 1.0 on PSP
+        o.color = L.colOff >= 0 ? ReadColor(v + L.colOff, L.col) : 0x80808080u;
         if (L.nrmOff >= 0) {
             int e = L.nrm == 3 ? 4 : L.nrm;
             o.normal = {ReadComp(v + L.nrmOff, L.nrm, true, 127.f, 32767.f),

@@ -4,7 +4,7 @@
 // All of them are built from FRG0 fragments:
 //   VFT0/VFT1  u32 GE vertex type, u32 stride [, u32 flags]
 //   TXF0       float uScale, vScale, uOffset, vOffset   (optional)
-//   FVT1       'PAD' fill to 16-byte alignment, then vertices
+//   FVT1       filler to 16-byte alignment (relative to the asset start), then vertices
 //   FSU0       u16 triangle-strip lengths, 0-terminated
 // grouped by FMH0 "mesh holders":
 //   MFL1       material flags (decoded by MaterialFlags, port of FUN_002182bc)

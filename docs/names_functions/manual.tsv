@@ -45,3 +45,8 @@ addr	name	comment
 001f68f8	CSubZone_LoadInstances	INS0: INL4 models, INN0 indices, INM1 2x mat4 per instance -> src/Core/World.cpp
 001f6d08	CSubZone_LoadInstanceModel	sprintf("%s_%s.inst", subzoneName, model) + LoadAssetByName
 002182bc	CMeshHolder_SetMaterial	MFL1 bits -> holder flags; TXI1, NAME -> MaterialFlags::Decode
+001d95ac	CEntityLoader_LoadENTS	ENT0: count + record offsets; per record relocate + create -> src/Core/Entity.cpp
+001db478	EntityRecord_Relocate	token stream walk: 1/2/5 string, 3 begin, 4 end (stops below depth 0)
+001d975c	CEntityManager_CreateFromRecord	class = record name up to ':' hashed; UID property
+001d7f58	CEntityTemplate_ctor	(obj, name, defaultTokens, info{name,?,baseType}, size); 454 static registrations
+000dde4c	StaticInit_gravediggable	registers the "gravediggable" template

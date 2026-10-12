@@ -46,10 +46,11 @@ static void LoadInstances(SubZone& sz, const Chunk& ins0) {
             sz.instances.resize(c.size / 2);
             for (uint32_t i = 0; i < c.size / 2; ++i) sz.instances[i].model = c.At<uint16_t>(i * 2);
         } else if (c.Is("INM1")) {
-            // two 4x4 float matrices per instance after 'PAD' filler to 16-byte alignment
-            // (the game aligns the pointer, (p + 15) & ~15); the matrices fill the tail of the chunk
-            size_t count = c.size / 128;
-            const uint8_t* base = c.data + (c.size - count * 128);
+            // two 4x4 float matrices per instance after filler to 16-byte alignment relative to the
+            // asset start (the game aligns the pointer: (p + 15) & ~15)
+            size_t pad = (16 - c.OffsetInAsset() % 16) % 16;
+            size_t count = c.size > pad ? (c.size - pad) / 128 : 0;
+            const uint8_t* base = c.data + pad;
             if (sz.instances.size() < count) sz.instances.resize(count);
             for (size_t i = 0; i < count; ++i) {
                 float m[32];
