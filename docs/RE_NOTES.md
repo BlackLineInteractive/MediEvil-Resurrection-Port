@@ -234,3 +234,34 @@ with GE lighting on and `sceGuColorMaterial(7)`, so the baked vertex colour is t
   with attenuation `sceGuLightAtt(0, 0, 1/r²)`. Not ported yet.
 - Fog: `sceGuFog(near, far, fogColour)`, linear in view depth.
 - Dan's Crypt lives in the global group (group 0, `01_danscrypt.land`); the lava is `lavabubble_flip.flip`.
+
+## 14. Blending, texture alpha, shared animation sets
+
+- **Blend mode** = `(MFL1 >> 3) & 0xFF`, stored at holder+8 by `FUN_002182bc`. `FUN_00212adc` (holder
+  draw) passes it to `FUN_001ee028`, which calls `sceGuBlendFunc(op, src, dst, srcFix, dstFix)` and
+  enables `GU_BLEND` when it is non-zero:
+
+  | mode | op | src | dst | meaning |
+  |---|---|---|---|---|
+  | 0x00 | – | – | – | blending off |
+  | 0x44 | ADD | SRC_ALPHA | 1-SRC_ALPHA | alpha blend (characters: MFL1 0xfa20) |
+  | 0x01 | ADD | 1-SRC_ALPHA | SRC_ALPHA | as decoded; also set on opaque geometry with vertex alpha 255 (mausoleum arches, `0x0100f808`), so the viewer treats it as 0x44 for now |
+  | 0x48 | ADD | SRC_ALPHA | FIX white | additive |
+  | 0x58 | ADD | DST_ALPHA | FIX white | additive (destination alpha = stencil on the PSP) |
+  | 0x54 | ADD | DST_ALPHA | 1-DST_ALPHA | |
+  | 0x42 | REV_SUB | FIX white | SRC_ALPHA | subtractive |
+  | 0x52 | REV_SUB | FIX white | DST_ALPHA | subtractive |
+
+- `FUN_00212adc` also enables culling unless MFL1 bit 1 (holder flag 4) is set.
+- **Texture alpha**: when PSM byte 0x0C == 1, texture flag 0x400 is set (`FUN_002391d4`), and
+  TFUNC gets TCC = RGBA (`FUN_00239f38`). Otherwise the GE ignores the texture alpha, and alpha comes
+  from the vertex colour only. Light-beam textures (`sf_light_beam`, `hh_light_ray`) have TCC off, with
+  a vertex alpha of 0x3e–0x80.
+- The texture function is always modulate. The texture DL resets UV scale/offset to 1/0
+  (`0x483f8000`, `0x493f8000`, `0x4a/0x4b`).
+- Viewer sorting: holders with blending on go to the translucent pass (no depth writes), except
+  alpha-blended holders that have opaque vertices and a cut-out texture (fewer than half of the
+  texels semi-transparent; character atlases have 13–15% soft edges). Those are drawn alpha-tested
+  with depth writes, otherwise the parts of a character sort wrongly.
+- **ANIMS**: the corporeal component `ANIMS = .../x_apkg.group` names the animation set
+  (`x_*.anim`, `x.atbl`). Models share sets: `zombie_stalker_2` uses `zombie_stalker_1`'s.
