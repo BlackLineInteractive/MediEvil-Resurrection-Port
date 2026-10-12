@@ -121,3 +121,27 @@ cmake -S . -B build -G Ninja && cmake --build build
 - 522 strings not present in retail: devkit screenshot paths `host0:%s_z%04u.tga`, `jump_to_level`,
   `select_language`, `Persistent data at 0x%0X`, `Text Message: %s`, sounds/effects cut from retail.
 - `gamedata.bin` 506 MB, header `TOCS1` (retail uses `TOCS0`): TOC layout is likely slightly different.
+
+## 9. main.prx Symbol Mapping
+- **Imports**: all 195 NIDs identified (`tools/prx_imports.py` + `docs/psp_nids.tsv`, 1,760 NIDs from PPSSPP
+  Core/HLE @12f2ac3) -> `docs/names_functions/imports.tsv`.
+- **Missing functions**: auto-analysis missed virtual methods (only referenced by vtables).
+  `tools/find_missing_functions.py` + `CreateFunctions.java` -> increased from 10,694 to **15,733 functions**.
+- **Vtables**: `tools/vtables.py` -> `docs/ghidra/vtables.tsv` (1,811 tables, 831 with identified constructors).
+  Class names via strings: `tools/name_classes.py` -> `docs/ghidra/classes.tsv` (currently 13: minigame challenges,
+  CZLManagerBrain). No RTTI present.
+- **Manual names**: `docs/names_functions/manual.tsv`. Applied to Ghidra project via:
+  `-postScript ApplyNames.java docs/names_functions/<file>.tsv` (overwrites only FUN_*).
+- **Decompilation**: `decomp/ghidra_full/<Name>_<addr>.c`, `decomp/index.tsv` (GhidraDecompileEverything from SHO).
+
+### Game Boot Sequence
+`module_start` (0x19ADA0) -> thread `user_main` -> crt0 newlib -> `main` (0x20CF8) -> **`GameMain` (0x20E5C)**:
+subsystem init -> `redirection.bin`, `movie_sound_overrides.bin` -> `CGame` (0xB8) -> intro video `00_cambridge_logo` ->
+state 0x78 with loop `vtable[2]()` + `EndFrame` -> intro cutscene `e_fm_cs_001` -> main game loop (loops back to
+start when game restarts).
+
+### Miscellaneous
+- `SaveGame_Disable/Enable(name)` (0x315D4/0x31564) - each boss/event disables saving under its own name
+  ("Pumpkin king", "Dragon King", "Stone wolves", "MadAxeMan", ...) -> entry points into boss logic.
+- Third-party code: SCE RT DME/Medius (multiplayer middleware, `$Header: /projects/rtime/CVS/dme_*`) - do not port.
+- Uppercase entity attribute keys (`CLDLIFE`, `CRYATTTIME`, `COLLSCALE`, ...) - used by ENTS chunks.
