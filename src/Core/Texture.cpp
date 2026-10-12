@@ -15,9 +15,13 @@ static std::vector<uint8_t> Unswizzle(const uint8_t* src, int widthBytes, int he
     return out;
 }
 
+// Blend only textures that are mostly semi-transparent (light beams: >80% of texels). Character atlases
+// and foliage have soft edges (10-15% semi texels) and are cut-outs: drawn alpha-tested with depth
+// writes, otherwise their own parts sort wrongly (arms over the body, sleeves showing through).
 static void ClassifyAlpha(Image& img) {
-    for (size_t i = 3; i < img.rgba.size(); i += 4)
-        if (img.rgba[i] > 8 && img.rgba[i] < 247) { img.translucent = true; return; }
+    size_t semi = 0, n = img.rgba.size() / 4;
+    for (size_t i = 3; i < img.rgba.size(); i += 4) semi += img.rgba[i] > 8 && img.rgba[i] < 247;
+    img.translucent = n && semi * 2 > n;
 }
 
 static bool DecodePSMRaw(const uint8_t* d, size_t size, Image& out);

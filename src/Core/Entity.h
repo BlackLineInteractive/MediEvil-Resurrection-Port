@@ -60,6 +60,9 @@ struct Entity {
     std::string Uid() const;
     // corporeal RES: "exporteddata/objects/x/x.group" -> "x" (empty if the entity has no model)
     std::string ResourceBaseName() const;
+    // corporeal ANIMS "x_apkg.group" -> "x" (animations x_*.anim, table x.atbl); RES base name when absent.
+    // Characters can share a set: zombie_stalker_2 plays zombie_stalker_1's animations.
+    std::string AnimBaseName() const;
 };
 
 // ENTS asset -> entities (templates are attached when `db` is given).

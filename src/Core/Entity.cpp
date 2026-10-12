@@ -109,14 +109,25 @@ std::string Entity::Uid() const {
     return Get("UID").value_or(std::string());
 }
 
-std::string Entity::ResourceBaseName() const {
-    auto res = Get("RES", "corporeal");
-    if (!res) return {};
-    std::string r = *res;
+static std::string BaseName(std::string r) {
     size_t slash = r.find_last_of('/');
     if (slash != std::string::npos) r = r.substr(slash + 1);
     size_t dot = r.find('.');
     return dot == std::string::npos ? r : r.substr(0, dot);
+}
+
+std::string Entity::ResourceBaseName() const {
+    auto res = Get("RES", "corporeal");
+    return res ? BaseName(*res) : std::string();
+}
+
+std::string Entity::AnimBaseName() const {
+    auto anims = Get("ANIMS", "corporeal");
+    if (!anims) return ResourceBaseName();
+    std::string b = BaseName(*anims);
+    const std::string pkg = "_apkg";
+    if (b.size() > pkg.size() && b.compare(b.size() - pkg.size(), pkg.size(), pkg) == 0) b.resize(b.size() - pkg.size());
+    return b;
 }
 
 bool LoadEntities(const std::vector<uint8_t>& data, const TemplateDB* db, std::vector<Entity>& out) {
