@@ -145,3 +145,24 @@ start when game restarts).
   ("Pumpkin king", "Dragon King", "Stone wolves", "MadAxeMan", ...) -> entry points into boss logic.
 - Third-party code: SCE RT DME/Medius (multiplayer middleware, `$Header: /projects/rtime/CVS/dme_*`) - do not port.
 - Uppercase entity attribute keys (`CLDLIFE`, `CRYATTTIME`, `COLLSCALE`, ...) - used by ENTS chunks.
+
+## 10. Порт: підзона, розстановка, матеріали, фліпбуки (`src/Core/World.*`)
+| main.prx | C++ | Що |
+|---|---|---|
+| `FUN_001f651c` CSubZone_Load | `SubZone::Load` | SZR0 пул → OCT0 → INS0 |
+| `FUN_001f68f8` CSubZone_LoadInstances | `LoadInstances` | INL4/INN0/INM1 |
+| `FUN_001f6d08` | `SubZone::InstanceModelHash` | ім'я `"<subzone>_<model>.inst"` |
+| `FUN_002182bc` CMeshHolder_SetMaterial | `MaterialFlags::Decode` | біти MFL1 |
+
+- **FRR0 `0x8000|n`** = n-й FRG0 всередині того самого FMH0 (у SUBZ і INST). Їх пропуск давав діри в рельєфі.
+- **INS0**: `INL4` = `u32 n; float lod[n]; u16 mode[n] (low byte: -1 нема, 0 завжди, інакше за дистанцією);
+  імена` (номери на кшталт `000048`); `INN0` = u16 індекс моделі на екземпляр; `INM1` = 'PAD' + 2×mat4 на
+  екземпляр (перша — світова; у другу гра пише 1/масштаб рядків).
+- Ім'я INST формується з імені підзони, але рядок знати не треба: `NameHashStripSuffix(hash(SUBZ), ".subz")`
+  дає стан хешу префікса (перевірено: префікс + ".subz" == хеш SUBZ).
+- **INST** = BOX0, DPD0, OCT0{FMH0 з локальними FRG0}, TEX0.
+- **TEX0**: байт-тип перед ім'ям: `0x03` PSM, `0x23` ('#') FLIP.
+- **FLIP**: `'FLIP', u32 кадрів, u32 fps, u32 крок`, далі кадри — повні PSM0. Вода = `wateranim_abe_flip.flip`.
+- Graveyard: 2 підзони, 240 екземплярів, 0 відсутніх моделей і текстур.
+- TODO: блендинг береться з альфи текстури — справжній стан GE з MFL1 (byte8/mode) ще не зіставлено.
+  Могила для викопування — ігрова сутність (ENTS), не статичний екземпляр.

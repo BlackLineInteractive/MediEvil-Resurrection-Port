@@ -6,6 +6,7 @@
 // --shot renders one frame with the camera framing the loaded geometry, writes a PNG and exits.
 #include "Core/GameData.h"
 #include "Core/Geometry.h"
+#include "Core/World.h"
 #include "Viewer/Renderer.h"
 
 #include <GL/glew.h>
@@ -21,6 +22,7 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace med;
@@ -96,43 +98,79 @@ struct App {
     GameData gd;
     Renderer ren;
     std::vector<std::unique_ptr<GpuMesh>> meshes;
+    std::unordered_map<uint32_t, const GpuMesh*> instanceMeshes;   // INST asset hash -> uploaded mesh
+    std::vector<DrawItem> items;
     int group = -1;
     std::string status;
     glm::vec3 bmin{0}, bmax{0};
     size_t tris = 0;
 
     void Clear() {
+        items.clear();
+        instanceMeshes.clear();
         meshes.clear();
         tris = 0;
         bmin = glm::vec3(1e30f);
         bmax = glm::vec3(-1e30f);
     }
-    void Add(const MeshData& m, int g) {
+    const GpuMesh* Upload(const MeshData& m, int g) {
         meshes.push_back(ren.Upload(m, gd, g));
-        tris += m.indices.size() / 3;
-        bmin = glm::min(bmin, m.bmin);
-        bmax = glm::max(bmax, m.bmax);
+        return meshes.back().get();
     }
-    // Every SUBZ of a group: the static level geometry.
-    void LoadLevel(int g) {
+    void Place(const GpuMesh* mesh, const glm::mat4& model, size_t triCount) {
+        items.push_back({mesh, model});
+        tris += triCount;
+        for (int i = 0; i < 8; ++i) {
+            glm::vec3 c(i & 1 ? mesh->bmax.x : mesh->bmin.x, i & 2 ? mesh->bmax.y : mesh->bmin.y,
+                        i & 4 ? mesh->bmax.z : mesh->bmin.z);
+            glm::vec3 w = glm::vec3(model * glm::vec4(c, 1));
+            bmin = glm::min(bmin, w);
+            bmax = glm::max(bmax, w);
+        }
+    }
+    // Every SUBZ of a group (static geometry + placed instances), loaded with the ported CSubZone code.
+    void LoadLevel(int g, bool withInstances) {
         Clear();
         group = g;
-        int ok = 0, bad = 0;
+        int ok = 0, bad = 0, placed = 0, missing = 0;
+        std::unordered_map<uint32_t, size_t> instTris;
         for (const auto& a : gd.Groups()[g].assets) {
             if (a.kind != 1 || a.type != FourCC("SUBZ")) continue;
-            MeshData m;
-            if (LoadSubZone(gd.Read(a), m)) { Add(m, g); ++ok; }
-            else ++bad;
+            SubZone sz;
+            if (!sz.Load(gd.Read(a), a.hash)) { ++bad; continue; }
+            ++ok;
+            Place(Upload(sz.mesh, g), glm::mat4(1.0f), sz.mesh.indices.size() / 3);
+            if (!withInstances) continue;
+            for (const auto& inst : sz.instances) {
+                if (inst.model >= sz.models.size() || sz.models[inst.model].mode == -1) continue;
+                uint32_t h = sz.InstanceModelHash(sz.models[inst.model]);
+                auto it = instanceMeshes.find(h);
+                if (it == instanceMeshes.end()) {
+                    const GpuMesh* gm = nullptr;
+                    if (const Asset* ia = gd.Find(h, g)) {
+                        MeshData md;
+                        if (LoadInstanceMesh(gd.Read(*ia), md)) {
+                            gm = Upload(md, g);
+                            instTris[h] = md.indices.size() / 3;
+                        }
+                    }
+                    it = instanceMeshes.emplace(h, gm).first;
+                }
+                if (!it->second) { ++missing; continue; }
+                Place(it->second, inst.world, instTris[h]);
+                ++placed;
+            }
         }
-        status = "group " + std::to_string(g) + ": " + std::to_string(ok) + " subzones, " + std::to_string(bad) +
-                 " failed, " + std::to_string(tris) + " tris, missing textures " + std::to_string(ren.MissingTextures());
+        status = "group " + std::to_string(g) + ": " + std::to_string(ok) + " subzones (" + std::to_string(bad) +
+                 " failed), " + std::to_string(placed) + " instances (" + std::to_string(missing) + " missing), " +
+                 std::to_string(tris) + " tris, missing textures " + std::to_string(ren.MissingTextures());
     }
     bool LoadModelAsset(const Asset& a, int g) {
         Clear();
         group = g;
         MeshData m;
         if (!LoadModel(gd.Read(a), m)) { status = "model: " + m.error; return false; }
-        Add(m, g);
+        Place(Upload(m, g), glm::mat4(1.0f), m.indices.size() / 3);
         status = gd.NameOf(a.hash) + ": " + std::to_string(m.fragments) + " fragments, " + std::to_string(tris) + " tris";
         return true;
     }
@@ -152,6 +190,7 @@ int main(int argc, char** argv) {
     std::string shot = Arg(argc, argv, "--shot");
     std::string modelName = Arg(argc, argv, "--model");
     int startGroup = std::stoi(Arg(argc, argv, "--group", "-1"));
+    bool withInstances = Arg(argc, argv, "--instances", "1") != "0";
 
     App app;
     std::string err;
@@ -197,8 +236,18 @@ int main(int argc, char** argv) {
         app.LoadModelAsset(*a, g);
         cam.Frame(app.bmin, app.bmax);
     } else if (startGroup >= 0) {
-        app.LoadLevel(startGroup);
+        app.LoadLevel(startGroup, withInstances);
         cam.Frame(app.bmin, app.bmax);
+    }
+    // --at x,y,z [--dist d]: aim the shot camera at a point instead of framing everything
+    std::string at = Arg(argc, argv, "--at");
+    if (!at.empty()) {
+        glm::vec3 p;
+        if (sscanf(at.c_str(), "%f,%f,%f", &p.x, &p.y, &p.z) == 3) {
+            float dist = std::stof(Arg(argc, argv, "--dist", "40"));
+            cam.pos = p - cam.Forward() * dist;
+            cam.speed = std::max(dist * 0.5f, 2.0f);
+        }
     }
     printf("%s\n", app.status.c_str());
 
@@ -242,7 +291,7 @@ int main(int argc, char** argv) {
         float radius = glm::length(app.bmax - app.bmin) + 100.f;
         glm::mat4 proj = glm::perspective(glm::radians(cam.fov), float(fbw) / std::max(fbh, 1), 0.1f, radius * 4.f);
         glm::mat4 view = glm::lookAt(cam.pos, cam.pos + cam.Forward(), glm::vec3(0, 1, 0));
-        app.ren.Draw(app.meshes, proj * view, textured, vcolor, wire);
+        app.ren.Draw(app.items, proj * view, SDL_GetTicks() / 1000.0, textured, vcolor, wire);
 
         if (!shot.empty()) {
             std::vector<uint8_t> px(size_t(fbw) * fbh * 4);
@@ -262,6 +311,7 @@ int main(int argc, char** argv) {
         ImGui::Checkbox("Textures", &textured); ImGui::SameLine();
         ImGui::Checkbox("Vertex colour", &vcolor); ImGui::SameLine();
         ImGui::Checkbox("Wire", &wire);
+        ImGui::Checkbox("Instances (INS0)", &withInstances);
         ImGui::Text("RMB look, WASD/QE move, Shift fast, wheel speed (%.1f)", cam.speed);
         if (ImGui::Button("Frame")) cam.Frame(app.bmin, app.bmax);
         ImGui::Separator();
@@ -273,7 +323,7 @@ int main(int argc, char** argv) {
             ImGui::EndCombo();
         }
         if (ImGui::Button("Load level geometry (all SUBZ)")) {
-            app.LoadLevel(listGroup);
+            app.LoadLevel(listGroup, withInstances);
             cam.Frame(app.bmin, app.bmax);
         }
         ImGui::InputText("Filter models", filter, sizeof filter);

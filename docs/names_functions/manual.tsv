@@ -41,3 +41,7 @@ addr	name	comment
 001e7aac	EndFrame	called once per frame by every top-level loop
 00008f74	CGame_ctor	object of 0xB8 bytes created in GameMain
 0001a1b4	CFrontEndState_ctor	0x78-byte object; GameMain calls vtable[2] (Update) until it returns 0
+001f651c	CSubZone_Load	SBZ0: SZR0 pool, BOX0, DPD0, OCT0, INS0 -> ported in src/Core/World.cpp
+001f68f8	CSubZone_LoadInstances	INS0: INL4 models, INN0 indices, INM1 2x mat4 per instance -> src/Core/World.cpp
+001f6d08	CSubZone_LoadInstanceModel	sprintf("%s_%s.inst", subzoneName, model) + LoadAssetByName
+002182bc	CMeshHolder_SetMaterial	MFL1 bits -> holder flags; TXI1, NAME -> MaterialFlags::Decode
