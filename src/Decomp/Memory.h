@@ -9,6 +9,7 @@ constexpr uint32_t kHeapBase = 0x00800000;
 constexpr uint32_t kStackTop = 0x03E00000;
 
 bool Boot(const char* prxPath);   // load main.prx into guest memory
-int RunStaticCtors();             // the game's C++ static constructors (.ctors)
+int RunStaticCtors();
+void InstallCrashHandler();   // prints the last guest calls on a host crash             // the game's C++ static constructors (.ctors)
 
 } // namespace psp

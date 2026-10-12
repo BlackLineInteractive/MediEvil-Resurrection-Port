@@ -3,6 +3,7 @@
 #include "decls.h"
 
 #include <cstdio>
+#include <string>
 
 using namespace psp;
 
@@ -11,6 +12,12 @@ int main(int argc, char** argv) {
     if (!Boot(prx)) { std::fprintf(stderr, "cannot load %s\n", prx); return 1; }
     std::printf("static constructors run: %d\n", RunStaticCtors());
 
+    if (argc > 2 && std::string(argv[2]) == "main") {
+        std::printf("running main (0x20cf8)\n");
+        game::f_00020cf8();
+        std::printf("main returned\n");
+        return 0;
+    }
     // danbrain speed curve FUN_0008ce24(stick, scale, brain): brain+0xc0c caps the result
     uint32_t brain = kHeapBase;
     *GP<float>(brain + 0xc0c) = 1.0f;

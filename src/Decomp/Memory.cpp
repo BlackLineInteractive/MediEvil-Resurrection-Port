@@ -4,9 +4,32 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <csignal>
+#include <sys/mman.h>
+#include <unistd.h>
 #include <vector>
+#include "Decomp/Caller.h"
 
 namespace psp {
+
+static void OnCrash(int sig) {
+    char buf[64];
+    int n = snprintf(buf, sizeof buf, "\n[psp] signal %d, last guest calls (newest last):\n", sig);
+    write(2, buf, size_t(n));
+    for (uint32_t i = 32; i > 0; i--) {
+        n = snprintf(buf, sizeof buf, "  %08x\n", g_trace[(g_tracePos - i) & 255]);
+        write(2, buf, size_t(n));
+    }
+    _exit(128 + sig);
+}
+
+void InstallCrashHandler() {
+    std::signal(SIGSEGV, OnCrash);
+    std::signal(SIGBUS, OnCrash);
+    std::signal(SIGILL, OnCrash);
+    std::signal(SIGFPE, OnCrash);
+    std::signal(SIGABRT, OnCrash);
+}
 
 bool Boot(const char* prxPath) {
     FILE* f = std::fopen(prxPath, "rb");
@@ -18,7 +41,13 @@ bool Boot(const char* prxPath) {
     size_t got = std::fread(d.data(), 1, d.size(), f);
     std::fclose(f);
     if (got != d.size() || d.size() < 0x34) return false;
-    if (!g_mem) g_mem = static_cast<uint8_t*>(std::calloc(kMemSize, 1));
+    if (!g_mem) {
+        // reserve the whole 32-bit space so a wild guest pointer reads zeros instead of crashing the host
+        void* m = mmap(nullptr, size_t(1) << 32, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+        if (m == MAP_FAILED) return false;
+        g_mem = static_cast<uint8_t*>(m);
+        InstallCrashHandler();
+    }
     auto u32 = [&](size_t o) { uint32_t v; std::memcpy(&v, &d[o], 4); return v; };
     uint32_t phoff = u32(0x1c);
     uint16_t phnum; std::memcpy(&phnum, &d[0x2c], 2);

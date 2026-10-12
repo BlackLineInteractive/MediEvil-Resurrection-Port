@@ -17,7 +17,7 @@ namespace psp {
 
 constexpr uint32_t kMemSize = 0x04000000;   // 64 MB guest space
 extern uint8_t* g_mem;
-extern uint32_t g_sp;                        // guest stack pointer (grows down)
+extern thread_local uint32_t g_sp;                        // guest stack pointer (grows down)
 
 [[noreturn]] void Fatal(const char* fmt, ...);
 void Unimplemented(uint32_t addr, const char* name);   // a function the transpiler could not convert
@@ -178,7 +178,7 @@ inline V16 VQ(VS s) { return VQ(s.f); }
 // s/t lane: bit4 neg, bit3 abs, bit2 constant, bits0-1 swizzle (constants 0,1,2,1/2 when bit2).
 // d lane:   bit2 write mask, bits0-1 1 = none, 2 = saturate [0,1], 4 = saturate [-1,1].
 struct Vfpu { int s[4] = {0, 1, 2, 3}, t[4] = {0, 1, 2, 3}, d[4] = {1, 1, 1, 1}; bool ps = false, pt = false, pd = false; };
-extern Vfpu g_vfpu;
+extern thread_local Vfpu g_vfpu;
 inline U4 vpfxs(int a, int b, int c, int d) { g_vfpu.s[0] = a; g_vfpu.s[1] = b; g_vfpu.s[2] = c; g_vfpu.s[3] = d; g_vfpu.ps = true; return {}; }
 inline U4 vpfxt(int a, int b, int c, int d) { g_vfpu.t[0] = a; g_vfpu.t[1] = b; g_vfpu.t[2] = c; g_vfpu.t[3] = d; g_vfpu.pt = true; return {}; }
 inline U4 vpfxd(int a, int b, int c, int d) { g_vfpu.d[0] = a; g_vfpu.d[1] = b; g_vfpu.d[2] = c; g_vfpu.d[3] = d; g_vfpu.pd = true; return {}; }

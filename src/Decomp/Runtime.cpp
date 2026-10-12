@@ -1,4 +1,5 @@
 #include "Decomp/Runtime.h"
+#include "Decomp/Caller.h"
 
 #include <cstdarg>
 #include <cstdio>
@@ -10,8 +11,10 @@
 namespace psp {
 
 uint8_t* g_mem = nullptr;
-uint32_t g_sp = 0;
-Vfpu g_vfpu;
+uint32_t g_trace[256];
+uint32_t g_tracePos = 0;
+thread_local uint32_t g_sp = 0;
+thread_local Vfpu g_vfpu;
 
 void Fatal(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt);

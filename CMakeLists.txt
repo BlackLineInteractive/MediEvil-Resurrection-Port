@@ -78,7 +78,7 @@ target_compile_definitions(medievil-viewer PRIVATE GL_SILENCE_DEPRECATION)
 # tools/transpile_build.sh) because it is derived from the game binary.
 file(GLOB MED_GAME_GEN CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/decomp/cpp/*.cpp)
 if(MED_GAME_GEN)
-    add_library(medievil-game STATIC src/Decomp/Runtime.cpp src/Decomp/Memory.cpp ${MED_GAME_GEN})
+    add_library(medievil-game STATIC src/Decomp/Runtime.cpp src/Decomp/Memory.cpp src/Decomp/Platform.cpp ${MED_GAME_GEN})
     target_include_directories(medievil-game PUBLIC src decomp/cpp)
     # guest memory is accessed through reinterpret_cast, and MIPS integer math wraps
     target_compile_options(medievil-game PRIVATE -w -fno-strict-aliasing -fwrapv)
