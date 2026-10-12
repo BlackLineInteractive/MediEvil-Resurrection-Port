@@ -44,6 +44,14 @@ public class ExportForTranspile extends GhidraScript {
     public void run() throws Exception {
         File outDir = new File(getScriptArgs()[0]);
         outDir.mkdirs();
+        // optional second argument: a file of function addresses to export (the rest are skipped and
+        // functions.tsv is not rewritten)
+        java.util.Set<String> only = null;
+        if (getScriptArgs().length > 1) {
+            only = new java.util.HashSet<>();
+            for (String l : java.nio.file.Files.readAllLines(java.nio.file.Paths.get(getScriptArgs()[1])))
+                if (!l.isBlank()) only.add(l.trim().split("\\s+")[0]);
+        }
         DecompInterface decomp = new DecompInterface();
         decomp.setOptions(new DecompileOptions());
         decomp.toggleCCode(true);
@@ -51,7 +59,7 @@ public class ExportForTranspile extends GhidraScript {
         decomp.setSimplificationStyle("decompile");
         decomp.openProgram(currentProgram);
 
-        try (PrintWriter idx = new PrintWriter(new File(outDir, "functions.tsv"), "UTF-8")) {
+        try (PrintWriter idx = new PrintWriter(new File(outDir, only == null ? "functions.tsv" : "functions.partial.tsv"), "UTF-8")) {
             FunctionIterator it = currentProgram.getFunctionManager().getFunctions(true);
             int n = 0;
             while (it.hasNext() && !monitor.isCancelled()) {
@@ -61,6 +69,7 @@ public class ExportForTranspile extends GhidraScript {
                 idx.println(addr + "\t" + f.getName() + "\t" + f.getSignature().getPrototypeString()
                         + "\t" + (thunk != null ? thunk.getName() : ""));
                 if (f.isExternal() || f.isThunk()) continue;
+                if (only != null && !only.contains(addr)) continue;
 
                 DecompileResults res = decomp.decompileFunction(f, 60, monitor);
                 if (res == null || !res.decompileCompleted() || res.getDecompiledFunction() == null) {

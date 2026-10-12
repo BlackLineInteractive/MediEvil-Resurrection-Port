@@ -146,7 +146,10 @@ PSPCALL(sceIoLseek) {
     FILE* f = Fd(a0);
     if (!f) return uint64_t(-1);
     // EABI: fd in a0, the 64-bit offset in the next register (positional), whence after it
-    std::fseek(f, long(int32_t(uint32_t(a1))), int(uint32_t(a2)));
+    // Ghidra cannot place 'whence' after the 64-bit register pair and leaves it uninitialised: the game
+    // only seeks archives from the start, so anything that is not a valid whence means SEEK_SET
+    uint32_t whence = uint32_t(a2) <= 2 ? uint32_t(a2) : 0;
+    std::fseek(f, long(uint32_t(a1)), int(whence));
     TRACE("lseek fd %u %d whence %u -> %ld\n", uint32_t(a0), int32_t(uint32_t(a1)), uint32_t(a2), std::ftell(f));
     return uint64_t(std::ftell(f));
 }
