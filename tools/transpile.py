@@ -155,6 +155,9 @@ def find_header(text, name):
 
 def rewrite_types(code, unknown):
     """T *... -> GP<T>, T (*) [N] -> GP<VB<N>> (in declarations and casts)."""
+    # bit-reinterpreting casts marked by ExportForTranspile.java
+    code = re.sub(r'\(\s*__bc_(' + ID + r')\s*\)', r'(::psp::BC<\1>)', code)
+    code = re.sub(r'\b__bc_(?=' + ID + r')', '', code)
     for r, s in LONG_FIX:
         code = r.sub(s, code)
     def arr_ptr(m):

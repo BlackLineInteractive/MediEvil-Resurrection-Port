@@ -18,6 +18,7 @@ int main(int argc, char** argv) {
     for (float s : {0.0f, 0.3f, 0.5f, 0.84f, 0.9f, 1.0f})
         std::printf("  %.2f -> %.4f\n", s, game::f_0008ce24(s, 1.0f, int(brain)));
 
+    game::f_0020f284();   // engine init (FUN_001e77dc) step: acos table at 0x3de210 used by the stick code
     // pad stick filter FUN_001ea594(pad + 0xc4): raw axes at +6/+7 floats, result x,y at +0/+1, mag +3
     uint32_t pad = kHeapBase + 0x2000;
     std::printf("FUN_001ea594 raw stick -> filtered (x, y, magnitude)\n");

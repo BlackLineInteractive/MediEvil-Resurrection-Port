@@ -464,6 +464,13 @@ template <class R, class... P, class... A> inline R CallAdapt(R (*f)(P...), A&&.
     return CallAdaptImpl(f, std::index_sequence_for<P...>{}, std::forward<A>(a)...);
 }
 
+// (__bc_T)x in Ghidra's output: a p-code CAST between float and integer, i.e. the same bits reread.
+template <class T> struct BC {
+    T v;
+    template <class A> BC(const A& a) { uint64_t u = UB(a); std::memcpy(&v, &u, sizeof(T)); }
+    operator T() const { return v; }
+};
+
 // Return values of unknown use: converts to float or integer by bit pattern like a register would.
 struct RV {
     uint64_t v;
