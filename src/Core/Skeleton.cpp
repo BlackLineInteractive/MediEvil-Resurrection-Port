@@ -158,8 +158,14 @@ void SamplePose(const Skeleton& skel, const Animation* anim, float time, std::ve
                 if (j >= 0) dst[j] = mix(keys[f0 * k + i], keys[f1 * k + i], a);
             }
         };
-        lerpTrack(anim->rotJoints, anim->rot, rot, [](glm::quat x, glm::quat y, float s) { return glm::slerp(x, y, s); });
-        lerpTrack(anim->tranJoints, anim->tran, pos, [](glm::vec3 x, glm::vec3 y, float s) { return glm::mix(x, y, s); });
+        // ROTA keys are relative to the bind rotation, like TRAN keys are relative to the bind position
+        std::vector<glm::quat> rel(n, glm::quat(1, 0, 0, 0));
+        lerpTrack(anim->rotJoints, anim->rot, rel, [](glm::quat x, glm::quat y, float s) { return glm::slerp(x, y, s); });
+        for (size_t j = 0; j < n; ++j) rot[j] = rot[j] * rel[j];
+        // TRAN keys are offsets from the bind position (pelvis key ~(0,-0.07,0) vs bind height 1.16)
+        std::vector<glm::vec3> offs(n, glm::vec3(0));
+        lerpTrack(anim->tranJoints, anim->tran, offs, [](glm::vec3 x, glm::vec3 y, float s) { return glm::mix(x, y, s); });
+        for (size_t j = 0; j < n; ++j) pos[j] += offs[j];
         lerpTrack(anim->scalJoints, anim->scal, scl, [](glm::vec3 x, glm::vec3 y, float s) { return glm::mix(x, y, s); });
     }
     std::vector<glm::mat4> world(n);

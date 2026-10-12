@@ -11,7 +11,7 @@ Every template is registered by a static initialiser:
 Output (one block per template, ENTS-dump style):
     template <name> base=<baseType> size=<size>
       <token tree>
-Usage: entity_templates.py <main.prx> <decomp_dir> > assets/entity_templates.txt
+Usage: entity_templates.py <main.prx> <decomp_dir> > docs/entity_templates.txt
 """
 import glob, os, re, struct, sys
 

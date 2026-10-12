@@ -202,7 +202,7 @@ struct App {
         if (!LoadAnimation(gd.Read(*a), *an)) return nullptr;
         return an;
     }
-    // Idle animation for a model: <base>_wait/_idle/_walk..., else the first loadable entry of <base>.atbl
+    // Idle animation for a model: <base>_wait/_idle/_walk..., else the <base>.atbl entry for state 85 (wait)
     // (ATBL: 8-byte header, then 56-byte records starting with the animation name hash).
     std::shared_ptr<const Animation> IdleAnim(const std::string& base, int g) {
         auto it = anims.find(base);
@@ -212,12 +212,16 @@ struct App {
             if ((found = LoadAnim(NameHash(base + sfx + ".anim"), g))) break;
         if (!found)
             if (const Asset* t = gd.Find(base + ".atbl", g)) {
+                // records: {u32 animHash, u32 state, ...}; state 85 (0x55) is the wait/idle state
+                // (zombie_guard_wait.anim), so prefer it, then fall back to any loadable entry
                 auto tb = gd.Read(*t);
-                for (size_t o = 8; o + 4 <= tb.size() && !found; o += 56) {
-                    uint32_t h;
-                    memcpy(&h, tb.data() + o, 4);
-                    if (h) found = LoadAnim(h, g);
-                }
+                for (int pass = 0; pass < 2 && !found; ++pass)
+                    for (size_t o = 8; o + 8 <= tb.size() && !found; o += 56) {
+                        uint32_t h, state;
+                        memcpy(&h, tb.data() + o, 4);
+                        memcpy(&state, tb.data() + o + 4, 4);
+                        if (h && (pass == 1 || state == 85)) found = LoadAnim(h, g);
+                    }
             }
         return anims[base] = found;
     }
@@ -337,7 +341,7 @@ int main(int argc, char** argv) {
     int startGroup = std::stoi(Arg(argc, argv, "--group", "-1"));
     bool withInstances = Arg(argc, argv, "--instances", "1") != "0";
     bool withEntities = Arg(argc, argv, "--entities", "1") != "0";
-    std::string templatesPath = Arg(argc, argv, "--templates", "assets/entity_templates.txt");
+    std::string templatesPath = Arg(argc, argv, "--templates", "docs/entity_templates.txt");
 
     App app;
     std::string err;
@@ -346,7 +350,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     app.gd.LoadNames(namesPath);
-    if (!app.templates.Load(templatesPath))
+    if (!app.templates.Load(templatesPath) && !app.templates.Load("assets/entity_templates.txt"))
         fprintf(stderr, "no entity templates at %s (run tools/entity_templates.py)\n", templatesPath.c_str());
     app.verbose = !shot.empty();
 
@@ -448,6 +452,20 @@ int main(int argc, char** argv) {
             SamplePose(*am.skel, app.animate ? am.anim.get() : nullptr, animTime + am.phase, palette);
             Skin(*am.bind, palette, am.posed);
             app.ren.UpdateVertices(*am.mesh, am.posed);
+            if (app.verbose) {
+                glm::vec3 lo(1e30f), hi(-1e30f);
+                bool nan = false;
+                for (const auto& v : am.posed) {
+                    nan |= !std::isfinite(v.pos.x + v.pos.y + v.pos.z);
+                    lo = glm::min(lo, v.pos);
+                    hi = glm::max(hi, v.pos);
+                }
+                printf("animated: joints %zu, anim %s flags %#x frames %u rot/tran/scal %zu/%zu/%zu, nan %d, "
+                       "posed y %.2f..%.2f\n", am.skel->Size(), am.anim ? "yes" : "no", am.anim ? am.anim->flags : 0,
+                       am.anim ? am.anim->frames : 0, am.anim ? am.anim->rotJoints.size() : 0,
+                       am.anim ? am.anim->tranJoints.size() : 0, am.anim ? am.anim->scalJoints.size() : 0, nan,
+                       lo.y, hi.y);
+            }
         }
         app.ren.Draw(app.items, proj * view, animTime, textured, vcolor, wire);
 

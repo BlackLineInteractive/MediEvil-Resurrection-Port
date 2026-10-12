@@ -7,7 +7,7 @@
 //   FUN_001d975c  CEntityManager::Create    class = record name up to ':' (hashed), UID from "UID="
 //   FUN_001d7f58  CEntityTemplate ctor      static initialisers register 454 templates: name, token
 //                                           stream with defaults (absolute pointers), base type, size
-// Templates are extracted to text by tools/entity_templates.py (assets/entity_templates.txt).
+// Templates are extracted to text by tools/entity_templates.py (docs/entity_templates.txt).
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 

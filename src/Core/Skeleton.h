@@ -12,7 +12,7 @@
 //   u32 flags; u32 ?; float ?; then track lists 'ROTA' / 'TRAN' / 'SCAL': u32 n, u32 jointNameHash[n]
 //   u32 ?, float duration, float frameTime, u32 frameCount
 //   rotations    [frame][rotTrack]   4 x s16 quaternion / 32767, start aligned to 8
-//   translations [frame][tranTrack]  3 x float (flag 0x100) or 4 x float aligned to 16
+//   translations [frame][tranTrack]  3 x float (flag 0x100) or 4 x float aligned to 16; offsets from bind pos
 //   scales       [frame][scalTrack]  4 x float, aligned to 16
 //   flags: 0x10 = no loop, 0x40 = compressed rotation stream (FUN_001a1a38, not supported here)
 // Track joints are identified by HashName129(joint name).

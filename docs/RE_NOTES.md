@@ -184,8 +184,7 @@ start when game restarts).
 - **Record**: `UID`, `POS=x y z`, `ROT=x y z w` (quaternion), `ZONE`, `CONNECTIONS=<uid> n m <linktype> ... !`,
   `HIB=1` (hibernating until woken), plus component blocks (`zombiebrain{NAVNAME=...}`, `corporeal{RES=...}`).
 - **Templates** hold all the design data: components, `INITHLTH`, `SIGHTRANGE`, speeds, `corporeal.RES`/`ANIMS`.
-  `tools/entity_templates.py main.prx decomp/ghidra_full > assets/entity_templates.txt` (needed by the viewer;
-  generated from your own binary, gitignored).
+  `tools/entity_templates.py main.prx decomp/ghidra_full > docs/entity_templates.txt` (read by the viewer).
 - Model of an entity = `corporeal.RES` (`.../x.group`) -> `x.mesh` (static) or `x.skel` (animated).
 - **SKEL** = `SKE0{SKL0 hierarchy, JNA0 joint names, BMA0 bind matrices}` + skinned `MOD0` (vtype 0x5A2/0x45A2/0x85A2:
   1-3 u16 weights; `JNT0` = per-fragment bone palette, 8 x u8, 0xFF unused) + `VOA3`, `ACT4`. Vertices are in
@@ -194,3 +193,20 @@ start when game restarts).
   start* (filler is 'PAD...' or zeros; some fragments also have trailing filler). Verified on 17 230 fragments.
 - Graveyard: 81 entities, 70 drawn, 1 hibernating (gold under the diggable grave), 10 without a model.
 - Vertices without a colour component use 0x80 (= 1.0 on PSP).
+
+## 12. Skeletons and animation (`src/Core/Skeleton.*`)
+- **SKL0**: `u16 n, u16 n`; n x 36 B `{quat x,y,z,w; vec3 pos; u8[8]}` local bind pose; then per joint its child
+  list terminated by `0xFF`. **JNA0** joint names, **BMA0** n x `{quat; vec3}` = inverse world bind.
+  Conventions verified to 3e-7: `local = T(pos)*R(quat)`, `world = parent*local`, `BMA0 * world = I`.
+- **Skinned vertices** (vtype 0x5A2 / 0x45A2 / 0x85A2): 1-3 u16 weights (0x8000 = 1.0) first in the vertex;
+  weight k uses joint `JNT0[k]` of the fragment. Vertices are in model space (bind pose).
+- **ACT4** (`FUN_0019e300`, `FUN_0019f09c`): `u32 flags, u32, float`; track lists `ROTA`/`TRAN`/`SCAL`
+  (`u32 n, u32 HashName129(joint)[n]`); `u32, float duration, float frameTime (1/15), u32 frames`; then
+  rotations `[frame][track]` 4 x s16 / 32767 (x,y,z,w, aligned 8), translations 3 x float (flag 0x100) or
+  4 x float (aligned 16), scales 4 x float (aligned 16). Frame order confirmed by smoothness (0.2 vs 151).
+- **Keys are relative to the bind pose**: `rot = bindRot * key`, `pos = bindPos + key` (pelvis key ~(0,-0.07,0)
+  vs bind height 1.16). Absolute interpretation lays characters on the ground / twists them.
+- Flags seen: 0x500 (1292), 0x510 (1386, 0x10 = no loop), 0x512 / 0x502 (0x2 = extra per-frame track at
+  +0xA4), 0x740 / 0x750 (5 anims, 0x40 = compressed rotation stream `FUN_001a1a38`, not supported yet).
+- **ATBL**: 8-byte header, then 56-byte records `{u32 animHash, u32 state, floats...}`; state 85 (0x55) =
+  wait (`zombie_guard_wait.anim`). The viewer plays `<model>_wait/_idle/...` or the state-85 entry.
