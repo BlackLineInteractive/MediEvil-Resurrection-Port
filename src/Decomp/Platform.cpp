@@ -467,6 +467,22 @@ PSPCALL(sceKernelRegisterSubIntrHandler) {
 PSPCALL(sceKernelEnableSubIntr) { UNUSED; if (uint32_t(a0) == 30) g_vblankHandlers[int(uint32_t(a1))].enabled = true; return 0; }
 PSPCALL(sceKernelReleaseSubIntrHandler) { UNUSED; if (uint32_t(a0) == 30) g_vblankHandlers.erase(int(uint32_t(a1))); return 0; }
 
+// ── GE: display lists are accepted and dropped; the port's renderer draws from game state instead ──
+constexpr uint32_t kEdram = 0x04000000, kEdramSize = 0x00200000;   // guest VRAM (the 4 GB reservation backs it)
+static int g_nextGeList = 1;
+PSPCALL(sceGeEdramGetAddr) { UNUSED; return kEdram; }
+PSPCALL(sceGeEdramGetSize) { UNUSED; return kEdramSize; }
+PSPCALL(sceGeSetCallback) { UNUSED; return 0; }
+PSPCALL(sceGeUnsetCallback) { UNUSED; return 0; }
+PSPCALL(sceGeListEnQueue) { UNUSED; return uint32_t(g_nextGeList++); }
+PSPCALL(sceGeListEnQueueHead) { UNUSED; return uint32_t(g_nextGeList++); }
+PSPCALL(sceGeListUpdateStallAddr) { UNUSED; return 0; }
+PSPCALL(sceGeListSync) { UNUSED; return 0; }
+PSPCALL(sceGeDrawSync) { UNUSED; return 0; }
+PSPCALL(sceGeGetCmd) { UNUSED; return 0; }
+PSPCALL(sceGeBreak) { UNUSED; return 0; }
+PSPCALL(sceGeContinue) { UNUSED; return 0; }
+
 // ── display: no PSP framebuffer; frames are drawn by the port's renderer ──
 PSPCALL(sceDisplaySetMode) { UNUSED; return 0; }
 PSPCALL(sceDisplaySetFrameBuf) { UNUSED; return 0; }

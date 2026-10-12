@@ -226,13 +226,8 @@ public class ExportForTranspile extends GhidraScript {
             if (n instanceof ghidra.app.decompiler.ClangFuncNameToken) {
                 PcodeOp op = ((ClangToken) n).getPcodeOp();
                 String rv = op == null ? null : callResult.get(op);
-                // only a call used as a statement; "x = FUN()" already names its result
-                int e = sb.length();
-                while (e > 0 && Character.isWhitespace(sb.charAt(e - 1))) e--;
-                String before = sb.substring(Math.max(0, e - 4), e);
-                boolean statement = e == 0 || before.endsWith(";") || before.endsWith("{") || before.endsWith("}")
-                        || before.endsWith(":") || before.endsWith("else");
-                if (rv != null && statement && written.add(op)) sb.append(rv).append(" = ");
+                // the whole return register (extraout_v0, extraout_f0, ...), wherever the call stands
+                if (rv != null && rv.matches("extraout_(v0|f0)(_\\d+)?") && written.add(op)) sb.append(rv).append(" = ");
             }
             ClangToken t = (ClangToken) n;
             if (t instanceof ghidra.app.decompiler.ClangBreak) {
