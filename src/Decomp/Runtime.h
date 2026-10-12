@@ -474,6 +474,8 @@ template <class T> struct BC {
     template <class U = T, std::enable_if_t<!std::is_same_v<U, U4>, int> = 0> operator U4() const { return U4(v); }
 };
 
+template <class T> inline float FB(const BC<T>& b) { return FB(b.v); }
+
 // An unmarked (float)x is a numeric conversion (p-code INT2FLOAT / FLOAT2FLOAT): integers convert as
 // signed values, anything float-typed passes through.
 struct NumF {
