@@ -101,7 +101,9 @@ Common vtypes: 0x1BE (UV u16, color 8888, normal s8, position float; 24 B), 0x1A
 **MESH/MOD0**: `MOD0{NAME, MDI2, FMH0{NAME, MFL1, FRG0..., TXI1}}`, followed by `TEX0`, `PADS`.
 **SUBZ/SBZ0**: `SBZ0{BOX0, DPD0, SZR0{FRG0*N}, OCT0{OMM0|OCM0, OCT0..., FMH0{MFL1, FRR0, TXI1, CNE0}}, INS0{...}}`, `TEX0`.
 - `FRR0`: u16 fragment indices into SZR0 pool (0xFFFF terminator; bit 0x8000 unknown).
-- `TXI1`: per referencing fragment `{u8 index in TEX0, u8 0xFF}`, ends with `FF FF`.
+- `TXI1`: one `{u8 index in TEX0 (0xFF = untextured), u8 flags (0xFF, sometimes 0xFE)}` per FRR0 ref.
+  Entry count = ref count; `FF FF` also occurs mid-list (untextured fragment), so it is **not** a terminator.
+  Untextured fragments are the black caps over rooms, never seen from inside the game.
 - `TEX0`: entries `0x03 "T:name.psm" 0`; name -> hash129 -> PSM within the same group.
 - `INS0` (`INN0/INM1/INL4`) - prop placement, not yet fully reversed.
 
