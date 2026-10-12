@@ -1,0 +1,128 @@
+# ==============================================================================
+# MediEvil: Resurrection (PSP PC Port / Reverse Engineering) - .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Game ROMs, Disc Images & Proprietary Game Assets (Copyright / DMCA)
+# ------------------------------------------------------------------------------
+# Retail game ISOs and disc images
+iso/
+*.iso
+*.cso
+*.chd
+*.cue
+*.img
+*.mdf
+*.mds
+*.pbp
+
+# Extracted retail ISO filesystem (PSP_GAME, USRDIR, SYSDIR, PMF movies, PRX modules)
+extracted/
+
+# Extracted raw game assets from gamedata.bin (PSM models, textures, BNK audio, levels)
+assets/
+
+# Standalone binary dumps & ROM files
+*.prx
+*.pmf
+*.at3
+*.vag
+
+# ------------------------------------------------------------------------------
+# 2. Ghidra Projects & RE Databases
+# ------------------------------------------------------------------------------
+# Ghidra project files and local database folders (conflict in git & multi-GB)
+*.gpr
+*.rep/
+ghidra/
+
+# Analysis logs, disassembly logs, export logs
+*.log
+
+# Compiled Ghidra scripts / Java classes
+*.class
+
+# ------------------------------------------------------------------------------
+# 3. Build & Compiler Artifacts (C/C++ / CMake / Recompiler / Port)
+# ------------------------------------------------------------------------------
+build/
+build-*/
+cmake-build-*/
+bin/
+out/
+dist/
+
+# Compiled objects and libraries
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+
+# LSP & tooling cache
+compile_commands.json
+.cache/
+CMakeUserPresets.json
+
+# ------------------------------------------------------------------------------
+# 4. Python Environment & Cache
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+env/
+.env
+
+# ------------------------------------------------------------------------------
+# 5. OS Generated Files
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ------------------------------------------------------------------------------
+# 6. IDEs & Editors
+# ------------------------------------------------------------------------------
+# CLion / JetBrains
+.idea/
+*.iml
+
+# Visual Studio Code (ignore user workspace state, keep configuration if desired)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Vim / Emacs
+*.swp
+*.swo
+*~
+\#*\#
+
+# ------------------------------------------------------------------------------
+# 7. Temporary / Crash Dumps / Backups
+# ------------------------------------------------------------------------------
+tmp/
+temp/
+*.tmp
+*.bak
+*.dmp
+*.core
