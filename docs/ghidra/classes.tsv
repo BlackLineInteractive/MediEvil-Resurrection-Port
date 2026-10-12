@@ -1,0 +1,14 @@
+vtable	slots	class	evidence
+003262f0	43	CArrowOfFateChallenge	00048390:CArrowOfFateChallenge::Dump
+0032b568	43	CDuckShootChallenge	000b84ac:CDuckShootChallenge::Dump
+0032c6c0	65	CMiniGameChallenge	00102010:CMiniGameChallenge::Serialise
+0032e178	67	CGuardianOfBellChallenge	000e0b8c:CGuardianOfBellChallenge::Dump
+003303a8	41	CMiniGameChallenge	00102010:CMiniGameChallenge::Serialise
+00331da8	66	CPitOfDeathChallenge	00114f90:CPitOfDeathChallenge::Dump
+003356b0	41	CShepherdsDelightChallenge	0013871c:CShepherdsDelightChallenge::Dump
+003359e8	43	CMiniGameChallenge	00102010:CMiniGameChallenge::Serialise
+00337c38	43	CTrebuchetofTerrorChallenge	00160f78:CTrebuchetofTerrorChallenge::Dump
+00337fd8	41	CVerminControlChallenge	00163fb4:CVerminControlChallenge::Dump
+00338858	66	CWeaponMasterChallenge	0016b710:CWeaponMasterChallenge::Dump
+003390c0	41	CWhackaZarokChallenge	00172c40:CWhackaZarokChallenge::Dump
+0033a1e0	24	CZLManagerBrain	00184344:CZLManagerBrain::~CZLManagerBrain; 001844c4:CZLManagerBrain::~CZLManagerBrain; 0018464c:CZLManagerBrain::Create; 00184344:CZLManagerBrain::~CZLManagerBrain

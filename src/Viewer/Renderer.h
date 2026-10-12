@@ -40,7 +40,9 @@ struct DrawItem {
 class Renderer {
 public:
     bool Init();
-    std::unique_ptr<GpuMesh> Upload(const MeshData& m, const GameData& gd, int preferGroup);
+    std::unique_ptr<GpuMesh> Upload(const MeshData& m, const GameData& gd, int preferGroup, bool dynamic = false);
+    // Replace the vertex data of a mesh uploaded with dynamic = true (same vertex count).
+    void UpdateVertices(const GpuMesh& mesh, const std::vector<Vertex>& vertices);
     void Draw(const std::vector<DrawItem>& items, const glm::mat4& viewProj, double time, bool textured,
               bool vertexColor, bool wireframe);
     void ClearTextureCache();

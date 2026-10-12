@@ -5,15 +5,23 @@
 # ------------------------------------------------------------------------------
 # 1. Game ROMs, Disc Images & Proprietary Game Assets (Copyright / DMCA)
 # ------------------------------------------------------------------------------
-# Retail game ISOs and disc images
-iso/
+# Retail game ISOs and disc images (root directory)
+/iso/
+*.iso
+*.cso
+*.chd
+*.cue
+*.img
+*.mdf
+*.mds
+*.pbp
 
-# Extracted retail ISO filesystem (PSP_GAME, USRDIR, SYSDIR, PMF movies, PRX modules)
-extracted/
-extracted*/
+# Extracted retail ISO filesystems
+/extracted/
+/extracted*/
 
-# Extracted raw game assets from gamedata.bin (PSM models, textures, BNK audio, levels)
-assets/
+# Extracted raw game assets from gamedata.bin (root directory)
+/assets/
 
 # Standalone binary dumps & ROM files
 *.prx
@@ -24,10 +32,10 @@ assets/
 # ------------------------------------------------------------------------------
 # 2. Ghidra Projects & RE Databases
 # ------------------------------------------------------------------------------
-# Ghidra project files and local database folders (conflict in git & multi-GB)
+# Root Ghidra project directory (do NOT match docs/ghidra/)
+/ghidra/
 *.gpr
 *.rep/
-ghidra/
 
 # Analysis logs, disassembly logs, export logs
 *.log
@@ -35,15 +43,18 @@ ghidra/
 # Compiled Ghidra scripts / Java classes
 *.class
 
+# Ghidra full decompiler output in root (do NOT match docs/decomp/)
+/decomp/
+
 # ------------------------------------------------------------------------------
 # 3. Build & Compiler Artifacts (C/C++ / CMake / Recompiler / Port)
 # ------------------------------------------------------------------------------
-build/
-build-*/
-cmake-build-*/
-bin/
-out/
-dist/
+/build/
+/build-*/
+/cmake-build-*/
+/bin/
+/out/
+/dist/
 
 # Compiled objects and libraries
 *.o
@@ -58,6 +69,7 @@ dist/
 
 # LSP & tooling cache
 compile_commands.json
+/.cache/
 .cache/
 CMakeUserPresets.json
 
@@ -76,7 +88,7 @@ env/
 .env
 
 # ------------------------------------------------------------------------------
-# 5. OS Generated Files
+# 5. OS Generated Files & Local Configs
 # ------------------------------------------------------------------------------
 # macOS
 .DS_Store
@@ -85,12 +97,14 @@ env/
 .Spotlight-V100
 .Trashes
 
-imgui.ini
-*.ini
 # Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Local UI layout state
+imgui.ini
+*.ini
 
 # ------------------------------------------------------------------------------
 # 6. IDEs & Editors
@@ -99,7 +113,7 @@ Desktop.ini
 .idea/
 *.iml
 
-# Visual Studio Code (ignore user workspace state, keep configuration if desired)
+# Visual Studio Code
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -115,12 +129,9 @@ Desktop.ini
 # ------------------------------------------------------------------------------
 # 7. Temporary / Crash Dumps / Backups
 # ------------------------------------------------------------------------------
-tmp/
-temp/
+/tmp/
+/temp/
 *.tmp
 *.bak
 *.dmp
 *.core
-
-# Ghidra decompiler output (regenerable, large)
-decomp/

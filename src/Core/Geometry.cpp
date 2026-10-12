@@ -86,11 +86,13 @@ std::vector<int> ParseTxi(const Chunk& c) {
 bool ParseFragment(const Chunk& frg, Fragment& out) {
     uint32_t vtype = 0, stride = 0;
     float txf[4] = {1, 1, 0, 0};
+    uint8_t palette[8] = {0, 0, 0, 0, 0, 0, 0, 0};   // JNT0: skeleton joint per weight slot (0xFF unused)
     Chunk fvt;
     bool haveFvt = false;
     ForEachChunk(frg, [&](const Chunk& c) {
         if (c.Is("VFT0") || c.Is("VFT1")) { vtype = c.At<uint32_t>(0); stride = c.At<uint32_t>(4); }
         else if (c.Is("TXF0")) for (int i = 0; i < 4; ++i) txf[i] = c.At<float>(i * 4);
+        else if (c.Is("JNT0")) for (uint32_t i = 0; i < 8 && i < c.size; ++i) palette[i] = c.data[i];
         else if (c.Is("FVT1")) { fvt = c; haveFvt = true; }
         else if (c.Is("FSU0"))
             for (uint32_t o = 0; o + 2 <= c.size; o += 2) {
@@ -111,9 +113,23 @@ bool ParseFragment(const Chunk& frg, Fragment& out) {
     const uint8_t* base = fvt.data + pad;
 
     out.verts.resize(count);
+    if (L.wgt) out.skin.resize(count);
     for (size_t i = 0; i < count; ++i) {
         const uint8_t* v = base + i * stride;
         Vertex& o = out.verts[i];
+        if (L.wgt) {
+            // weight k applies to palette[k]; u8 / u16 weights are fixed point with 0x80 / 0x8000 = 1.0
+            SkinWeights& sw = out.skin[i];
+            float sum = 0;
+            int used = 0;
+            for (int k = 0; k < L.wgtCount && k < 8; ++k) {
+                float w = ReadComp(v + k * (L.wgt == 3 ? 4 : L.wgt), L.wgt, false, 128.f, 32768.f);
+                if (w <= 0 || palette[k] == 0xFF) continue;
+                if (used < 4) { sw.joint[used] = palette[k]; sw.weight[used] = w; ++used; sum += w; }
+            }
+            if (!used) { sw.joint[0] = palette[0] == 0xFF ? 0 : palette[0]; sw.weight[0] = 1; sum = 1; used = 1; }
+            for (int k = 0; k < 4; ++k) sw.weight[k] = k < used ? sw.weight[k] / sum : 0;
+        }
         if (L.texOff >= 0) {
             int e = L.tex == 3 ? 4 : L.tex;
             float u = ReadComp(v + L.texOff, L.tex, false, 128.f, 32768.f);
@@ -145,6 +161,11 @@ void AppendFragment(MeshData& m, const Fragment& f, int texture, uint32_t materi
     b.texture = texture;
     b.material = material;
     m.vertices.insert(m.vertices.end(), f.verts.begin(), f.verts.end());
+    if (!f.skin.empty() || !m.skin.empty()) {
+        m.skin.resize(base);   // rigid fragments before the first skinned one bind to joint 0
+        if (f.skin.empty()) m.skin.resize(m.vertices.size());
+        else m.skin.insert(m.skin.end(), f.skin.begin(), f.skin.end());
+    }
     uint32_t s = 0;
     for (uint16_t n : f.strips) {
         for (uint32_t i = 0; i + 2 < n; ++i) {

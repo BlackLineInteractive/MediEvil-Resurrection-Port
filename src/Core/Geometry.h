@@ -40,8 +40,15 @@ struct TextureRef {
     uint8_t kind = 3;              // byte before the name: 0x03 = PSM, 0x23 ('#') = FLIP flipbook
 };
 
+// Per-vertex skinning (SKEL meshes): up to 4 skeleton joint indices and weights (sum 1).
+struct SkinWeights {
+    uint8_t joint[4] = {0, 0, 0, 0};
+    float weight[4] = {1, 0, 0, 0};
+};
+
 struct MeshData {
     std::vector<Vertex> vertices;
+    std::vector<SkinWeights> skin;   // empty for rigid meshes, else one per vertex
     std::vector<uint32_t> indices;
     std::vector<Batch> batches;
     std::vector<TextureRef> textures;
@@ -53,6 +60,7 @@ struct MeshData {
 struct Fragment {
     std::vector<Vertex> verts;
     std::vector<uint16_t> strips;
+    std::vector<SkinWeights> skin;   // filled when the vertex type has weights; JNT0 palette resolved
 };
 
 bool ParseFragment(const Chunk& frg, Fragment& out);

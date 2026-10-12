@@ -8,6 +8,7 @@
 #include "Core/Geometry.h"
 #include "Core/World.h"
 #include "Core/Entity.h"
+#include "Core/Skeleton.h"
 #include "Viewer/Renderer.h"
 
 #include <GL/glew.h>
@@ -96,6 +97,31 @@ struct Camera {
     }
 };
 
+// An entity with a skeleton: its own copy of the skinned mesh, posed on the CPU every frame.
+struct AnimatedModel {
+    const GpuMesh* mesh = nullptr;
+    std::shared_ptr<const MeshData> bind;
+    std::shared_ptr<const Skeleton> skel;
+    std::shared_ptr<const Animation> anim;   // null: bind pose
+    float phase = 0;
+    std::vector<Vertex> posed;
+};
+
+void Skin(const MeshData& bind, const std::vector<glm::mat4>& palette, std::vector<Vertex>& out) {
+    out = bind.vertices;
+    for (size_t i = 0; i < out.size() && i < bind.skin.size(); ++i) {
+        const SkinWeights& s = bind.skin[i];
+        glm::vec4 p(0), n(0);
+        for (int k = 0; k < 4; ++k) {
+            if (s.weight[k] <= 0 || s.joint[k] >= palette.size()) continue;
+            p += s.weight[k] * (palette[s.joint[k]] * glm::vec4(bind.vertices[i].pos, 1));
+            n += s.weight[k] * (palette[s.joint[k]] * glm::vec4(bind.vertices[i].normal, 0));
+        }
+        out[i].pos = glm::vec3(p);
+        out[i].normal = glm::vec3(n);
+    }
+}
+
 struct App {
     GameData gd;
     Renderer ren;
@@ -105,6 +131,12 @@ struct App {
     std::unordered_map<const GpuMesh*, size_t> meshTris;
     TemplateDB templates;
     std::vector<Entity> entities;
+    std::vector<AnimatedModel> animated;
+    bool animate = true;
+    // per level caches for skinned models
+    struct SkinnedSource { std::shared_ptr<const MeshData> mesh; std::shared_ptr<const Skeleton> skel; };
+    std::unordered_map<std::string, SkinnedSource> skinned;
+    std::unordered_map<std::string, std::shared_ptr<const Animation>> anims;
     std::vector<DrawItem> items;
     int group = -1;
     bool verbose = false;
@@ -118,6 +150,9 @@ struct App {
         entityMeshes.clear();
         meshTris.clear();
         entities.clear();
+        animated.clear();
+        skinned.clear();
+        anims.clear();
         meshes.clear();
         tris = 0;
         bmin = glm::vec3(1e30f);
@@ -142,6 +177,50 @@ struct App {
         }
         return entityMeshes[base] = gm;
     }
+    // SKEL asset of a model base name: skeleton + skinned mesh (null when the model is rigid)
+    const SkinnedSource* Skinned(const std::string& base, int g) {
+        auto it = skinned.find(base);
+        if (it != skinned.end()) return it->second.mesh ? &it->second : nullptr;
+        SkinnedSource src;
+        if (!gd.Find(base + ".mesh", g))
+            if (const Asset* a = gd.Find(base + ".skel", g)) {
+                auto bytes = gd.Read(*a);
+                auto md = std::make_shared<MeshData>();
+                auto sk = std::make_shared<Skeleton>();
+                if (LoadModel(bytes, *md) && !md->skin.empty() && LoadSkeleton(bytes, *sk)) {
+                    src.mesh = md;
+                    src.skel = sk;
+                }
+            }
+        auto& slot = skinned[base] = src;
+        return slot.mesh ? &slot : nullptr;
+    }
+    std::shared_ptr<const Animation> LoadAnim(uint32_t hash, int g) {
+        const Asset* a = gd.Find(hash, g);
+        if (!a || a->type != FourCC("ANIM")) return nullptr;
+        auto an = std::make_shared<Animation>();
+        if (!LoadAnimation(gd.Read(*a), *an)) return nullptr;
+        return an;
+    }
+    // Idle animation for a model: <base>_wait/_idle/_walk..., else the first loadable entry of <base>.atbl
+    // (ATBL: 8-byte header, then 56-byte records starting with the animation name hash).
+    std::shared_ptr<const Animation> IdleAnim(const std::string& base, int g) {
+        auto it = anims.find(base);
+        if (it != anims.end()) return it->second;
+        std::shared_ptr<const Animation> found;
+        for (const char* sfx : {"_wait", "_idle", "_idle1", "_wait1", "_stand", "_walk", "_hover", "_float", ""})
+            if ((found = LoadAnim(NameHash(base + sfx + ".anim"), g))) break;
+        if (!found)
+            if (const Asset* t = gd.Find(base + ".atbl", g)) {
+                auto tb = gd.Read(*t);
+                for (size_t o = 8; o + 4 <= tb.size() && !found; o += 56) {
+                    uint32_t h;
+                    memcpy(&h, tb.data() + o, 4);
+                    if (h) found = LoadAnim(h, g);
+                }
+            }
+        return anims[base] = found;
+    }
     void LoadEntitiesOfGroup(int g, int& placed, int& noModel, int& missing, int& hidden) {
         for (const auto& a : gd.Groups()[g].assets) {
             if (a.kind != 1 || a.type != FourCC("ENTS")) continue;
@@ -153,9 +232,23 @@ struct App {
                 if (e.Get("HIB").value_or("0") == "1") { ++hidden; continue; }
                 std::string base = e.ResourceBaseName();
                 if (base.empty()) { ++noModel; continue; }
+                glm::mat4 world = glm::translate(glm::mat4(1.0f), e.Position()) * glm::mat4_cast(e.Rotation());
+                if (const SkinnedSource* src = Skinned(base, g)) {
+                    AnimatedModel am;
+                    am.bind = src->mesh;
+                    am.skel = src->skel;
+                    am.anim = IdleAnim(base, g);
+                    am.phase = float(i % 7) * 0.37f;   // desynchronise identical characters
+                    meshes.push_back(ren.Upload(*am.bind, gd, g, true));
+                    am.mesh = meshes.back().get();
+                    meshTris[am.mesh] = am.bind->indices.size() / 3;
+                    Place(am.mesh, world, meshTris[am.mesh]);
+                    animated.push_back(std::move(am));
+                    ++placed;
+                    continue;
+                }
                 const GpuMesh* m = EntityMesh(base, g);
                 if (!m) { ++missing; continue; }
-                glm::mat4 world = glm::translate(glm::mat4(1.0f), e.Position()) * glm::mat4_cast(e.Rotation());
                 Place(m, world, meshTris[m]);
                 ++placed;
             }
@@ -348,7 +441,15 @@ int main(int argc, char** argv) {
         float radius = glm::length(app.bmax - app.bmin) + 100.f;
         glm::mat4 proj = glm::perspective(glm::radians(cam.fov), float(fbw) / std::max(fbh, 1), 0.1f, radius * 4.f);
         glm::mat4 view = glm::lookAt(cam.pos, cam.pos + cam.Forward(), glm::vec3(0, 1, 0));
-        app.ren.Draw(app.items, proj * view, SDL_GetTicks() / 1000.0, textured, vcolor, wire);
+        float now = SDL_GetTicks() / 1000.0f;
+        if (!shot.empty()) now = std::stof(Arg(argc, argv, "--time", "0.5"));
+        std::vector<glm::mat4> palette;
+        for (auto& am : app.animated) {
+            SamplePose(*am.skel, app.animate ? am.anim.get() : nullptr, now + am.phase, palette);
+            Skin(*am.bind, palette, am.posed);
+            app.ren.UpdateVertices(*am.mesh, am.posed);
+        }
+        app.ren.Draw(app.items, proj * view, now, textured, vcolor, wire);
 
         if (!shot.empty()) {
             std::vector<uint8_t> px(size_t(fbw) * fbh * 4);
@@ -369,7 +470,8 @@ int main(int argc, char** argv) {
         ImGui::Checkbox("Vertex colour", &vcolor); ImGui::SameLine();
         ImGui::Checkbox("Wire", &wire);
         ImGui::Checkbox("Instances (INS0)", &withInstances); ImGui::SameLine();
-        ImGui::Checkbox("Entities (ENTS)", &withEntities);
+        ImGui::Checkbox("Entities (ENTS)", &withEntities); ImGui::SameLine();
+        ImGui::Checkbox("Animate", &app.animate);
         ImGui::Text("RMB look, WASD/QE move, Shift fast, wheel speed (%.1f)", cam.speed);
         if (ImGui::Button("Frame")) cam.Frame(app.bmin, app.bmax);
         ImGui::Separator();

@@ -127,13 +127,19 @@ void Renderer::ClearTextureCache() {
     missing_ = 0;
 }
 
-std::unique_ptr<GpuMesh> Renderer::Upload(const MeshData& m, const GameData& gd, int preferGroup) {
+void Renderer::UpdateVertices(const GpuMesh& mesh, const std::vector<Vertex>& vertices) {
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(Vertex), vertices.data());
+}
+
+std::unique_ptr<GpuMesh> Renderer::Upload(const MeshData& m, const GameData& gd, int preferGroup, bool dynamic) {
     auto g = std::make_unique<GpuMesh>();
     glGenVertexArrays(1, &g->vao);
     glBindVertexArray(g->vao);
     glGenBuffers(1, &g->vbo);
     glBindBuffer(GL_ARRAY_BUFFER, g->vbo);
-    glBufferData(GL_ARRAY_BUFFER, m.vertices.size() * sizeof(Vertex), m.vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, m.vertices.size() * sizeof(Vertex), m.vertices.data(),
+                 dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
     glGenBuffers(1, &g->ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g->ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m.indices.size() * 4, m.indices.data(), GL_STATIC_DRAW);
