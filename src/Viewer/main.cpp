@@ -133,6 +133,7 @@ struct AnimatedModel {
     std::shared_ptr<const Animation> anim;   // null: bind pose
     float phase = 0;
     std::vector<Vertex> posed;
+    std::string base;   // model base name (diagnostics)
 };
 
 void Skin(const MeshData& bind, const std::vector<glm::mat4>& palette, std::vector<Vertex>& out) {
@@ -273,6 +274,7 @@ struct App {
                     am.bind = src->mesh;
                     am.skel = src->skel;
                     am.anim = IdleAnim(base, g);
+                    am.base = base;
                     am.phase = float(i % 7) * 0.37f;   // desynchronise identical characters
                     meshes.push_back(ren.Upload(*am.bind, gd, g, true));
                     am.mesh = meshes.back().get();
@@ -549,8 +551,8 @@ int main(int argc, char** argv) {
                     lo = glm::min(lo, v.pos);
                     hi = glm::max(hi, v.pos);
                 }
-                printf("animated: joints %zu, anim %s flags %#x frames %u rot/tran/scal %zu/%zu/%zu, nan %d, "
-                       "posed y %.2f..%.2f\n", am.skel->Size(), am.anim ? "yes" : "no", am.anim ? am.anim->flags : 0,
+                printf("animated %s: joints %zu, anim %s flags %#x frames %u rot/tran/scal %zu/%zu/%zu, nan %d, "
+                       "posed y %.2f..%.2f\n", am.base.c_str(), am.skel->Size(), am.anim ? "yes" : "no", am.anim ? am.anim->flags : 0,
                        am.anim ? am.anim->frames : 0, am.anim ? am.anim->rotJoints.size() : 0,
                        am.anim ? am.anim->tranJoints.size() : 0, am.anim ? am.anim->scalJoints.size() : 0, nan,
                        lo.y, hi.y);
