@@ -51,6 +51,8 @@ public:
               bool textured, bool vertexColor, bool wireframe, bool lighting, bool fog);
     void ClearTextureCache();
     int MissingTextures() const { return missing_; }
+    void SetAnisotropy(int level);
+    int GetAnisotropy() const { return anisotropy_; }
 
 private:
     const GpuTexture* Texture(const TextureRef& ref, const GameData& gd, int preferGroup);
@@ -63,6 +65,7 @@ private:
     GLuint white_ = 0;
     std::unordered_map<std::string, std::unique_ptr<GpuTexture>> texCache_;
     int missing_ = 0;
+    int anisotropy_ = 4;
 };
 
 } // namespace med

@@ -5,6 +5,12 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <algorithm>
+
+#ifndef GL_TEXTURE_MAX_ANISOTROPY_EXT
+#define GL_TEXTURE_MAX_ANISOTROPY_EXT 0x84FE
+#endif
+
+static float s_currentAnisotropy = 4.0f;
 #include <cctype>
 #include <cstdio>
 #include <string>
@@ -134,6 +140,9 @@ static GLuint UploadImage(const Image& img) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    if (s_currentAnisotropy > 1.0f) {
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, s_currentAnisotropy);
+    }
     return tex;
 }
 
@@ -355,6 +364,21 @@ void Renderer::Draw(const std::vector<DrawItem>& items, const glm::mat4& view, c
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
     glBindVertexArray(0);
+}
+
+void Renderer::SetAnisotropy(int level) {
+    anisotropy_ = level;
+    s_currentAnisotropy = float(level);
+    for (auto& [name, tex] : texCache_) {
+        if (!tex) continue;
+        for (GLuint f : tex->frames) {
+            if (f) {
+                glBindTexture(GL_TEXTURE_2D, f);
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, s_currentAnisotropy);
+            }
+        }
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 } // namespace med

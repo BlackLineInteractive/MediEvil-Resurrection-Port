@@ -1,3 +1,4 @@
+#include "Viewer/OverlayLayer.h"
 // MediEvil: Resurrection level/model viewer - reads gamedata.bin directly.
 //
 //   medievil-viewer [--data gamedata.bin] [--names docs/names.tsv]
@@ -426,6 +427,8 @@ int main(int argc, char** argv) {
     glewInit();
 #endif
     if (!app.ren.Init()) { fprintf(stderr, "renderer init failed\n"); return 1; }
+    OverlayLayer overlay;
+    if (!overlay.Init()) { fprintf(stderr, "overlay init failed\n"); return 1; }
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -535,11 +538,13 @@ int main(int argc, char** argv) {
 
         int fbw, fbh;
         SDL_GL_GetDrawableSize(win, &fbw, &fbh);
-        glViewport(0, 0, fbw, fbh);
+        int renderW = fbw, renderH = fbh;
+        overlay.BeginFrame(fbw, fbh, renderW, renderH);
+
         glClearColor(0.08f, 0.07f, 0.10f, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         float radius = glm::length(app.bmax - app.bmin) + 100.f;
-        glm::mat4 proj = glm::perspective(glm::radians(cam.fov), float(fbw) / std::max(fbh, 1), 0.1f, radius * 4.f);
+        glm::mat4 proj = glm::perspective(glm::radians(cam.fov), float(renderW) / std::max(renderH, 1), 0.1f, radius * 4.f);
         glm::mat4 view = glm::lookAt(cam.pos, cam.pos + cam.Forward(), glm::vec3(0, 1, 0));
         float animTime = SDL_GetTicks() / 1000.0f;
         if (!shot.empty()) animTime = std::stof(Arg(argc, argv, "--time", "0.5"));
@@ -565,6 +570,8 @@ int main(int argc, char** argv) {
         }
         app.ren.Draw(app.items, view, proj, animTime, textured, vcolor, wire, lighting, fog);
 
+        overlay.EndFrameAndBlit(fbw, fbh, animTime);
+
         if (!shot.empty()) {
             std::vector<uint8_t> px(size_t(fbw) * fbh * 4);
             glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -577,6 +584,21 @@ int main(int argc, char** argv) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
+
+        overlay.RenderPerfTile();
+
+        uint32_t pspButtons = 0;
+        float stickX = 0.0f, stickY = 0.0f;
+        overlay.RenderTouchControls(pspButtons, stickX, stickY);
+        if (std::abs(stickX) > 0.05f || std::abs(stickY) > 0.05f) {
+            glm::vec3 f = cam.Forward(), r = cam.Right();
+            float s = cam.speed * dt;
+            cam.pos += (r * stickX - f * stickY) * s;
+        }
+
+        static bool showOverlaySettings = true;
+        overlay.RenderSettingsWindow(&showOverlaySettings, &app.ren);
+
         ImGui::SetNextWindowSize(ImVec2(380, 600), ImGuiCond_FirstUseEver);
         ImGui::Begin("gamedata.bin");
         ImGui::TextWrapped("%s", app.status.c_str());
@@ -587,7 +609,8 @@ int main(int argc, char** argv) {
         ImGui::Checkbox("Fog", &fog);
         ImGui::Checkbox("Instances (INS0)", &withInstances); ImGui::SameLine();
         ImGui::Checkbox("Entities (ENTS)", &withEntities); ImGui::SameLine();
-        ImGui::Checkbox("Animate", &app.animate);
+        ImGui::Checkbox("Animate", &app.animate); ImGui::SameLine();
+        ImGui::Checkbox("Settings & Overlay", &showOverlaySettings);
         ImGui::Text("1 finger trackpad drag = Look | WASD+QE = Move | Scroll = Zoom | F = Frame (spd %.1f)", cam.speed);
         if (ImGui::Button("Frame")) cam.Frame(app.bmin, app.bmax);
         ImGui::Separator();
@@ -622,6 +645,7 @@ int main(int argc, char** argv) {
 
     app.meshes.clear();
     app.ren.ClearTextureCache();
+    overlay.Shutdown();
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();

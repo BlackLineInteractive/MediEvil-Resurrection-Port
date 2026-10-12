@@ -76,6 +76,7 @@ FetchContent_MakeAvailable(imgui)
 add_executable(medievil-viewer
     src/Viewer/main.cpp
     src/Viewer/Renderer.cpp
+    src/Viewer/OverlayLayer.cpp
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
     ${imgui_SOURCE_DIR}/imgui_tables.cpp
