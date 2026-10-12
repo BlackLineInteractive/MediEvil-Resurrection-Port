@@ -128,3 +128,6 @@ temp/
 *.bak
 *.dmp
 *.core
+
+# Ghidra decompiler output (regenerable, large)
+decomp/
