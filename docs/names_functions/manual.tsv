@@ -1,0 +1,28 @@
+# Hand-identified functions (address, name, evidence). Applied with ApplyNames.java.
+addr	name	comment
+001be1e4	HashName129	h = h*129 + (signed char)c over len chars (0 = strlen); asset/name hash
+002723bc	strlen
+00272004	sprintf	called with "%s.psm"
+00272104	strcat	appends ".comp"
+00272324	strcpy
+002724f0	strncpy	copies 4 chars of extension
+0022223c	PathBaseName	returns pointer after last ':' '/' or '\\'
+00222380	PathExtensionFourCC	finds '.', converts extension to FourCC via ExtensionToFourCC
+00222310	ExtensionToFourCC	first 4 chars of extension upper-cased
+002223e4	AssetTypeFromName	extension FourCC, validated against the registered type map
+00222740	LoadAssetByName	hash(basename) + type; ANIM also tries <name>.comp
+002228b4	LoadAsset
+001baf40	operator_new	allocation size argument, returns object later initialised with vtable
+0020aba8	LocalisationChunkHandler	switch over LOC0/LOG0/LPN0/... chunk tags
+00048390	CArrowOfFateChallenge_Dump	"//---- CArrowOfFateChallenge::Dump ----//"
+000b84ac	CDuckShootChallenge_Dump	"//---- CDuckShootChallenge::Dump ----//"
+000e0b8c	CGuardianOfBellChallenge_Dump	"//---- CGuardianOfBellChallenge::Dump ----//"
+00102010	CMiniGameChallenge_Serialise	"CMiniGameChallenge::Serialise Not Implemented"
+00114f90	CPitOfDeathChallenge_Dump	"//---- CPitOfDeathChallenge::Dump ----//"
+0013871c	CShepherdsDelightChallenge_Dump	"//---- CShepherdsDelightChallenge::Dump ----//"
+00160f78	CTrebuchetofTerrorChallenge_Dump	"//---- CTrebuchetofTerrorChallenge::Dump ----//"
+00163fb4	CVerminControlChallenge_Dump	"//---- CVerminControlChallenge::Dump ----//"
+0016b710	CWeaponMasterChallenge_Dump	"//---- CWeaponMasterChallenge::Dump ----//"
+00172c40	CWhackaZarokChallenge_Dump	"//---- CWhackaZarokChallenge::Dump ----//"
+00184344	CZLManagerBrain_dtor	"CZLManagerBrain::~CZLManagerBrain()"
+001844c4	CZLManagerBrain_dtor2	second ~CZLManagerBrain variant (complete vs deleting not yet determined)
