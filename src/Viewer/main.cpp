@@ -441,15 +441,15 @@ int main(int argc, char** argv) {
         float radius = glm::length(app.bmax - app.bmin) + 100.f;
         glm::mat4 proj = glm::perspective(glm::radians(cam.fov), float(fbw) / std::max(fbh, 1), 0.1f, radius * 4.f);
         glm::mat4 view = glm::lookAt(cam.pos, cam.pos + cam.Forward(), glm::vec3(0, 1, 0));
-        float now = SDL_GetTicks() / 1000.0f;
-        if (!shot.empty()) now = std::stof(Arg(argc, argv, "--time", "0.5"));
+        float animTime = SDL_GetTicks() / 1000.0f;
+        if (!shot.empty()) animTime = std::stof(Arg(argc, argv, "--time", "0.5"));
         std::vector<glm::mat4> palette;
         for (auto& am : app.animated) {
-            SamplePose(*am.skel, app.animate ? am.anim.get() : nullptr, now + am.phase, palette);
+            SamplePose(*am.skel, app.animate ? am.anim.get() : nullptr, animTime + am.phase, palette);
             Skin(*am.bind, palette, am.posed);
             app.ren.UpdateVertices(*am.mesh, am.posed);
         }
-        app.ren.Draw(app.items, proj * view, now, textured, vcolor, wire);
+        app.ren.Draw(app.items, proj * view, animTime, textured, vcolor, wire);
 
         if (!shot.empty()) {
             std::vector<uint8_t> px(size_t(fbw) * fbh * 4);
