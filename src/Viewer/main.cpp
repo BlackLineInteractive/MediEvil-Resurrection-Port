@@ -8,6 +8,7 @@
 #include "Core/Geometry.h"
 #include "Core/World.h"
 #include "Core/Entity.h"
+#include "Core/Land.h"
 #include "Core/Skeleton.h"
 #include "Viewer/Renderer.h"
 
@@ -84,16 +85,43 @@ void WritePNG(const std::string& path, int w, int h, const std::vector<uint8_t>&
 
 struct Camera {
     glm::vec3 pos{0, 10, 30};
-    float yaw = -90, pitch = -20, fov = 60, speed = 20;
+    glm::vec3 pivot{0, 0, 0};
+    float yaw = -90.0f, pitch = -20.0f, fov = 60.0f, speed = 20.0f;
+
     glm::vec3 Forward() const {
         float y = glm::radians(yaw), p = glm::radians(pitch);
         return {std::cos(p) * std::cos(y), std::sin(p), std::cos(p) * std::sin(y)};
     }
+    glm::vec3 Right() const {
+        glm::vec3 r = glm::cross(Forward(), glm::vec3(0, 1, 0));
+        float len = glm::length(r);
+        return len > 0.0001f ? r / len : glm::vec3(1, 0, 0);
+    }
+    glm::vec3 Up() const {
+        return glm::normalize(glm::cross(Right(), Forward()));
+    }
     void Frame(glm::vec3 bmin, glm::vec3 bmax) {
-        glm::vec3 c = (bmin + bmax) * 0.5f;
+        pivot = (bmin + bmax) * 0.5f;
         float r = std::max(glm::length(bmax - bmin) * 0.5f, 1.0f);
-        pos = c - Forward() * (r / std::tan(glm::radians(fov) * 0.5f));
+        pos = pivot - Forward() * (r / std::tan(glm::radians(fov) * 0.5f));
         speed = std::max(r * 0.5f, 2.0f);
+    }
+    void Orbit(float dYaw, float dPitch) {
+        yaw += dYaw;
+        pitch = std::clamp(pitch + dPitch, -89.0f, 89.0f);
+        float dist = glm::length(pos - pivot);
+        if (dist < 0.1f) dist = 1.0f;
+        pos = pivot - Forward() * dist;
+    }
+    void Pan(float dx, float dy) {
+        float factor = speed * 0.05f;
+        glm::vec3 delta = -Right() * (dx * factor) + Up() * (dy * factor);
+        pos += delta;
+        pivot += delta;
+    }
+    void Dolly(float delta) {
+        float step = delta * (speed * 0.15f);
+        pos += Forward() * step;
     }
 };
 
@@ -105,6 +133,7 @@ struct AnimatedModel {
     std::shared_ptr<const Animation> anim;   // null: bind pose
     float phase = 0;
     std::vector<Vertex> posed;
+    std::string base;   // model base name (diagnostics)
 };
 
 void Skin(const MeshData& bind, const std::vector<glm::mat4>& palette, std::vector<Vertex>& out) {
@@ -138,6 +167,7 @@ struct App {
     std::unordered_map<std::string, SkinnedSource> skinned;
     std::unordered_map<std::string, std::shared_ptr<const Animation>> anims;
     std::vector<DrawItem> items;
+    std::vector<Zone> zones;   // LAND zones of the loaded level (lighting, fog)
     int group = -1;
     bool verbose = false;
     std::string status;
@@ -146,6 +176,7 @@ struct App {
 
     void Clear() {
         items.clear();
+        zones.clear();
         instanceMeshes.clear();
         entityMeshes.clear();
         meshTris.clear();
@@ -237,29 +268,36 @@ struct App {
                 std::string base = e.ResourceBaseName();
                 if (base.empty()) { ++noModel; continue; }
                 glm::mat4 world = glm::translate(glm::mat4(1.0f), e.Position()) * glm::mat4_cast(e.Rotation());
+                const ZoneLighting* light = ZoneLight(e.Position(), e.Position());
                 if (const SkinnedSource* src = Skinned(base, g)) {
                     AnimatedModel am;
                     am.bind = src->mesh;
                     am.skel = src->skel;
                     am.anim = IdleAnim(base, g);
+                    am.base = base;
                     am.phase = float(i % 7) * 0.37f;   // desynchronise identical characters
                     meshes.push_back(ren.Upload(*am.bind, gd, g, true));
                     am.mesh = meshes.back().get();
                     meshTris[am.mesh] = am.bind->indices.size() / 3;
-                    Place(am.mesh, world, meshTris[am.mesh]);
+                    Place(am.mesh, world, meshTris[am.mesh], light, true);
                     animated.push_back(std::move(am));
                     ++placed;
                     continue;
                 }
                 const GpuMesh* m = EntityMesh(base, g);
                 if (!m) { ++missing; continue; }
-                Place(m, world, meshTris[m]);
+                Place(m, world, meshTris[m], light, true);
                 ++placed;
             }
         }
     }
-    void Place(const GpuMesh* mesh, const glm::mat4& model, size_t triCount) {
-        items.push_back({mesh, model});
+    const ZoneLighting* ZoneLight(glm::vec3 lo, glm::vec3 hi) const {
+        int z = FindZone(zones, lo, hi);
+        return z < 0 ? nullptr : &zones[z].light;
+    }
+    void Place(const GpuMesh* mesh, const glm::mat4& model, size_t triCount, const ZoneLighting* light = nullptr,
+               bool object = false) {
+        items.push_back({mesh, model, light, object});
         tris += triCount;
         for (int i = 0; i < 8; ++i) {
             glm::vec3 c(i & 1 ? mesh->bmax.x : mesh->bmin.x, i & 2 ? mesh->bmax.y : mesh->bmin.y,
@@ -275,6 +313,13 @@ struct App {
         group = g;
         int ok = 0, bad = 0, placed = 0, missing = 0;
         std::unordered_map<uint32_t, size_t> instTris;
+        for (const auto& a : gd.Groups()[g].assets)
+            if (a.kind == 1 && a.type == FourCC("LAND")) LoadLand(gd.Read(a), zones);
+        if (verbose)
+            for (const auto& z : zones)
+                printf("zone %s: (%.1f %.1f %.1f) - (%.1f %.1f %.1f) ambient %.2f %.2f %.2f, fog %.0f..%.0f\n", z.name.c_str(),
+                       z.bmin.x, z.bmin.y, z.bmin.z, z.bmax.x, z.bmax.y, z.bmax.z, z.light.worldAmbient.x,
+                       z.light.worldAmbient.y, z.light.worldAmbient.z, z.light.fogNear, z.light.fogFar);
         for (const auto& a : gd.Groups()[g].assets) {
             if (a.kind != 1 || a.type != FourCC("SUBZ")) continue;
             SubZone sz;
@@ -284,7 +329,8 @@ struct App {
                 printf("subzone %s: bounds (%.1f %.1f %.1f) - (%.1f %.1f %.1f), %zu instances\n", gd.NameOf(a.hash).c_str(),
                        sz.mesh.bmin.x, sz.mesh.bmin.y, sz.mesh.bmin.z, sz.mesh.bmax.x, sz.mesh.bmax.y, sz.mesh.bmax.z,
                        sz.instances.size());
-            Place(Upload(sz.mesh, g), glm::mat4(1.0f), sz.mesh.indices.size() / 3);
+            const ZoneLighting* light = ZoneLight(sz.mesh.bmin, sz.mesh.bmax);
+            Place(Upload(sz.mesh, g), glm::mat4(1.0f), sz.mesh.indices.size() / 3, light);
             if (!withInstances) continue;
             for (const auto& inst : sz.instances) {
                 if (inst.model >= sz.models.size() || sz.models[inst.model].mode == -1) continue;
@@ -302,7 +348,7 @@ struct App {
                     it = instanceMeshes.emplace(h, gm).first;
                 }
                 if (!it->second) { ++missing; continue; }
-                Place(it->second, inst.world, instTris[h]);
+                Place(it->second, inst.world, instTris[h], light);
                 ++placed;
             }
         }
@@ -417,6 +463,7 @@ int main(int argc, char** argv) {
     printf("%s\n", app.status.c_str());
 
     bool textured = true, vcolor = true, wire = false, running = true;
+    bool lighting = Arg(argc, argv, "--lighting", "1") != "0", fog = Arg(argc, argv, "--fog", "1") != "0";
     char filter[64] = "";
     int listGroup = startGroup < 0 ? 0 : startGroup;
     Uint64 last = SDL_GetPerformanceCounter();
@@ -426,26 +473,60 @@ int main(int argc, char** argv) {
         while (SDL_PollEvent(&e)) {
             ImGui_ImplSDL2_ProcessEvent(&e);
             if (e.type == SDL_QUIT) running = false;
-            if (e.type == SDL_MOUSEMOTION && (e.motion.state & SDL_BUTTON_RMASK) && !ImGui::GetIO().WantCaptureMouse) {
-                cam.yaw += e.motion.xrel * 0.2f;
-                cam.pitch = std::clamp(cam.pitch - e.motion.yrel * 0.2f, -89.f, 89.f);
+
+            bool uiMouse = ImGui::GetIO().WantCaptureMouse;
+            bool uiKey = ImGui::GetIO().WantCaptureKeyboard;
+
+            if (e.type == SDL_MOUSEBUTTONDOWN && !uiMouse) {
+                // 1-finger click on trackpad (LMB) or RMB or MMB anywhere in viewport: look around
+                if (e.button.button == SDL_BUTTON_LEFT || e.button.button == SDL_BUTTON_RIGHT || e.button.button == SDL_BUTTON_MIDDLE) {
+                    SDL_SetRelativeMouseMode(SDL_TRUE);
+                }
+            } else if (e.type == SDL_MOUSEBUTTONUP) {
+                if (SDL_GetRelativeMouseMode()) {
+                    Uint32 mstate = SDL_GetMouseState(nullptr, nullptr);
+                    if (!(mstate & (SDL_BUTTON_LMASK | SDL_BUTTON_RMASK | SDL_BUTTON_MMASK))) {
+                        SDL_SetRelativeMouseMode(SDL_FALSE);
+                    }
+                }
+            } else if (e.type == SDL_MOUSEMOTION) {
+                if (SDL_GetRelativeMouseMode()) {
+                    bool shift = (SDL_GetModState() & KMOD_SHIFT) != 0;
+                    if (shift) {
+                        cam.Pan(float(e.motion.xrel), float(e.motion.yrel));
+                    } else {
+                        // 1-finger drag on trackpad (LMB) or RMB: smooth camera rotation
+                        cam.yaw += e.motion.xrel * 0.2f;
+                        cam.pitch = std::clamp(cam.pitch - e.motion.yrel * 0.2f, -89.0f, 89.0f);
+                        cam.pivot = cam.pos + cam.Forward() * 20.0f;
+                    }
+                }
+            } else if (e.type == SDL_MOUSEWHEEL && !uiMouse) {
+                // Trackpad 2-finger scroll or mouse wheel: smooth zoom
+                cam.Dolly(float(e.wheel.y) * 1.5f);
+            } else if (e.type == SDL_KEYDOWN && !uiKey) {
+                if (e.key.keysym.sym == SDLK_f) {
+                    cam.Frame(app.bmin, app.bmax);
+                }
             }
-            if (e.type == SDL_MOUSEWHEEL && !ImGui::GetIO().WantCaptureMouse)
-                cam.speed = std::max(0.5f, cam.speed * (e.wheel.y > 0 ? 1.25f : 0.8f));
         }
         Uint64 now = SDL_GetPerformanceCounter();
         float dt = float(now - last) / SDL_GetPerformanceFrequency();
         last = now;
         if (!ImGui::GetIO().WantCaptureKeyboard) {
             const Uint8* k = SDL_GetKeyboardState(nullptr);
-            glm::vec3 f = cam.Forward(), r = glm::normalize(glm::cross(f, glm::vec3(0, 1, 0)));
-            float s = cam.speed * dt * (k[SDL_SCANCODE_LSHIFT] ? 4.f : 1.f);
+            glm::vec3 f = cam.Forward(), r = cam.Right();
+            float mult = 1.0f;
+            if (k[SDL_SCANCODE_LSHIFT] || k[SDL_SCANCODE_RSHIFT]) mult = 4.0f;
+            if (k[SDL_SCANCODE_LCTRL] || k[SDL_SCANCODE_RCTRL]) mult = 0.25f;
+            float s = cam.speed * dt * mult;
             if (k[SDL_SCANCODE_W]) cam.pos += f * s;
             if (k[SDL_SCANCODE_S]) cam.pos -= f * s;
             if (k[SDL_SCANCODE_D]) cam.pos += r * s;
             if (k[SDL_SCANCODE_A]) cam.pos -= r * s;
-            if (k[SDL_SCANCODE_E]) cam.pos.y += s;
-            if (k[SDL_SCANCODE_Q]) cam.pos.y -= s;
+            if (k[SDL_SCANCODE_E] || k[SDL_SCANCODE_SPACE]) cam.pos.y += s;
+            if (k[SDL_SCANCODE_Q] || k[SDL_SCANCODE_C]) cam.pos.y -= s;
+            cam.pivot = cam.pos + cam.Forward() * 20.0f;
         }
 
         int fbw, fbh;
@@ -471,14 +552,14 @@ int main(int argc, char** argv) {
                     lo = glm::min(lo, v.pos);
                     hi = glm::max(hi, v.pos);
                 }
-                printf("animated: joints %zu, anim %s flags %#x frames %u rot/tran/scal %zu/%zu/%zu, nan %d, "
-                       "posed y %.2f..%.2f\n", am.skel->Size(), am.anim ? "yes" : "no", am.anim ? am.anim->flags : 0,
+                printf("animated %s: joints %zu, anim %s flags %#x frames %u rot/tran/scal %zu/%zu/%zu, nan %d, "
+                       "posed y %.2f..%.2f\n", am.base.c_str(), am.skel->Size(), am.anim ? "yes" : "no", am.anim ? am.anim->flags : 0,
                        am.anim ? am.anim->frames : 0, am.anim ? am.anim->rotJoints.size() : 0,
                        am.anim ? am.anim->tranJoints.size() : 0, am.anim ? am.anim->scalJoints.size() : 0, nan,
                        lo.y, hi.y);
             }
         }
-        app.ren.Draw(app.items, proj * view, animTime, textured, vcolor, wire);
+        app.ren.Draw(app.items, view, proj, animTime, textured, vcolor, wire, lighting, fog);
 
         if (!shot.empty()) {
             std::vector<uint8_t> px(size_t(fbw) * fbh * 4);
@@ -498,10 +579,12 @@ int main(int argc, char** argv) {
         ImGui::Checkbox("Textures", &textured); ImGui::SameLine();
         ImGui::Checkbox("Vertex colour", &vcolor); ImGui::SameLine();
         ImGui::Checkbox("Wire", &wire);
+        ImGui::Checkbox("Lighting (LGT1)", &lighting); ImGui::SameLine();
+        ImGui::Checkbox("Fog", &fog);
         ImGui::Checkbox("Instances (INS0)", &withInstances); ImGui::SameLine();
         ImGui::Checkbox("Entities (ENTS)", &withEntities); ImGui::SameLine();
         ImGui::Checkbox("Animate", &app.animate);
-        ImGui::Text("RMB look, WASD/QE move, Shift fast, wheel speed (%.1f)", cam.speed);
+        ImGui::Text("1 finger trackpad drag = Look | WASD+QE = Move | Scroll = Zoom | F = Frame (spd %.1f)", cam.speed);
         if (ImGui::Button("Frame")) cam.Frame(app.bmin, app.bmax);
         ImGui::Separator();
         const auto& groups = app.gd.Groups();

@@ -4,6 +4,8 @@ Real-time 3D level and model viewer, archive extraction toolkit, and reverse eng
 
 Opens the native PSP archive (`USRDIR/gamedata.bin`), decodes geometry and textures directly from disc data, and renders full levels and individual meshes using OpenGL 4.1.
 
+![MediEvil: Resurrection Viewer Preview](media/viewer_preview.png)
+
 ## Features
 
 - **Direct Archive Streaming:** Reads levels, models, and textures directly from `gamedata.bin` via binary search tree lookup without unpacking.
@@ -92,12 +94,13 @@ By default, the viewer loads `extracted/PSP_GAME/USRDIR/gamedata.bin` and resolv
 
 | Input | Action |
 |---|---|
-| **Right Mouse Button + Drag** | Look around (orbit / freelook) |
+| **1-Finger Trackpad Click & Drag** (or LMB / RMB) | Look around / rotate camera (smooth relative mode, no screen border limits) |
 | **W / A / S / D** | Move forward / left / backward / right |
-| **Q / E** | Move down / up |
-| **Shift** | Move faster (4x speed boost) |
-| **Scroll Wheel** | Adjust movement speed |
-| **Frame Button** | Center camera on active bounding box |
+| **Q / E** (or **Space / C**) | Move down / up |
+| **Shift / Ctrl** | Speed multiplier: Shift = 4x turbo boost, Ctrl = 0.25x precision |
+| **Shift + Drag** | Pan camera along screen plane |
+| **2-Finger Trackpad Scroll** (or Wheel) | Dolly zoom in / out |
+| **F key** (or Frame button) | Focus / frame active level or model |
 
 ## Tools & Pipeline
 

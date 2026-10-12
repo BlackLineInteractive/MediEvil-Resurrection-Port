@@ -43,24 +43,41 @@ layout(location=0) in vec3 aPos;
 layout(location=1) in vec3 aNrm;
 layout(location=2) in vec2 aUV;
 layout(location=3) in vec4 aCol;
-uniform mat4 uViewProj, uModel;
-out vec2 vUV; out vec4 vCol; out vec3 vNrm;
+uniform mat4 uViewProj, uView, uModel;
+uniform int uLightMode;          // 0: unlit (vertex colour x2), 1: GE lighting, world, 2: GE lighting, model
+uniform vec3 uAmbient, uLightCol[2], uLightDir[2];
+out vec2 vUV; out vec4 vCol; out vec3 vNrm; out float vDepth;
 void main() {
-    vUV = aUV; vCol = aCol; vNrm = mat3(uModel) * aNrm;
-    gl_Position = uViewProj * uModel * vec4(aPos, 1.0);
+    vUV = aUV; vNrm = mat3(uModel) * aNrm;
+    vec4 wp = uModel * vec4(aPos, 1.0);
+    vDepth = -(uView * wp).z;
+    if (uLightMode == 0) {
+        vCol = vec4(min(aCol.rgb * 2.0, vec3(2.0)), min(aCol.a * 2.0, 1.0));
+    } else {
+        // sceGuColorMaterial(ambient|diffuse): the vertex colour is the material (Land.h).
+        // Models use 0x80 = 1.0 colours (no vertex colour -> 0x80 default), hence the x2 there.
+        vec4 mat = uLightMode == 2 ? min(aCol * 2.0, vec4(1.0)) : aCol;
+        vec3 n = normalize(vNrm);
+        vec3 c = uAmbient * mat.rgb;
+        for (int i = 0; i < 2; ++i) c += uLightCol[i] * mat.rgb * max(dot(n, uLightDir[i]), 0.0);
+        vCol = vec4(min(c, vec3(1.0)), mat.a);
+    }
+    gl_Position = uViewProj * wp;
 })";
 
-// PSP vertex colours use 0x80 as 1.0 (baked lighting), hence the x2.
 static const char* kFS = R"(#version 410 core
-in vec2 vUV; in vec4 vCol; in vec3 vNrm;
+in vec2 vUV; in vec4 vCol; in vec3 vNrm; in float vDepth;
 uniform sampler2D uTex; uniform bool uTextured, uVColor; uniform float uAlphaRef;
+uniform bool uFog; uniform vec3 uFogColor; uniform float uFogNear, uFogFar;
 out vec4 frag;
 void main() {
     vec4 t = uTextured ? texture(uTex, vUV) : vec4(1.0);
-    vec4 c = uVColor ? vec4(min(vCol.rgb * 2.0, vec3(2.0)), min(vCol.a * 2.0, 1.0)) : vec4(1.0);
+    vec4 c = uVColor ? vCol : vec4(1.0);
     if (!uVColor) c.rgb *= 0.55 + 0.45 * abs(normalize(vNrm).y);
     vec4 o = t * c;
     if (o.a < uAlphaRef) discard;
+    if (uFog && uFogFar > uFogNear)
+        o.rgb = mix(o.rgb, uFogColor, clamp((vDepth - uFogNear) / (uFogFar - uFogNear), 0.0, 1.0));
     frag = o;
 })";
 #endif
@@ -108,6 +125,15 @@ bool Renderer::Init() {
     if (!ok) return false;
     uViewProj_ = glGetUniformLocation(prog_, "uViewProj");
     uModel_ = glGetUniformLocation(prog_, "uModel");
+    uView_ = glGetUniformLocation(prog_, "uView");
+    uLightMode_ = glGetUniformLocation(prog_, "uLightMode");
+    uAmbient_ = glGetUniformLocation(prog_, "uAmbient");
+    uLightCol_ = glGetUniformLocation(prog_, "uLightCol");
+    uLightDir_ = glGetUniformLocation(prog_, "uLightDir");
+    uFog_ = glGetUniformLocation(prog_, "uFog");
+    uFogColor_ = glGetUniformLocation(prog_, "uFogColor");
+    uFogNear_ = glGetUniformLocation(prog_, "uFogNear");
+    uFogFar_ = glGetUniformLocation(prog_, "uFogFar");
     uTextured_ = glGetUniformLocation(prog_, "uTextured");
     uVColor_ = glGetUniformLocation(prog_, "uVColor");
     uTex_ = glGetUniformLocation(prog_, "uTex");
@@ -190,10 +216,30 @@ std::unique_ptr<GpuMesh> Renderer::Upload(const MeshData& m, const GameData& gd,
     return g;
 }
 
-void Renderer::DrawPass(const std::vector<DrawItem>& items, double time, bool textured, bool translucentPass) {
+void Renderer::SetLighting(const DrawItem& it, bool lighting, bool fog) {
+    const ZoneLighting* l = it.light;
+    glUniform1i(uLightMode_, lighting && l ? (it.object ? 2 : 1) : 0);
+    glUniform1i(uFog_, fog && l);
+    if (!l) return;
+    glUniform3fv(uAmbient_, 1, glm::value_ptr(it.object ? l->objectAmbient : l->worldAmbient));
+    glm::vec3 col[2], dir[2];
+    for (int i = 0; i < 2; ++i) {
+        col[i] = l->lightOn[i] ? l->lightColor[i] : glm::vec3(0);
+        dir[i] = l->lightDir[i];
+    }
+    glUniform3fv(uLightCol_, 2, glm::value_ptr(col[0]));
+    glUniform3fv(uLightDir_, 2, glm::value_ptr(dir[0]));
+    glUniform3fv(uFogColor_, 1, glm::value_ptr(l->fogColor / 255.0f));
+    glUniform1f(uFogNear_, l->fogNear);
+    glUniform1f(uFogFar_, l->fogFar);
+}
+
+void Renderer::DrawPass(const std::vector<DrawItem>& items, double time, bool textured, bool translucentPass,
+                        bool lighting, bool fog) {
     for (const auto& it : items) {
         const GpuMesh* m = it.mesh;
         glUniformMatrix4fv(uModel_, 1, GL_FALSE, glm::value_ptr(it.model));
+        SetLighting(it, lighting, fog);
         glBindVertexArray(m->vao);
         for (const auto& b : m->batches) {
             const GpuTexture* t = b.texture >= 0 && b.texture < int(m->textures.size()) ? m->textures[b.texture] : nullptr;
@@ -210,10 +256,12 @@ void Renderer::DrawPass(const std::vector<DrawItem>& items, double time, bool te
     }
 }
 
-void Renderer::Draw(const std::vector<DrawItem>& items, const glm::mat4& viewProj, double time, bool textured,
-                    bool vertexColor, bool wireframe) {
+void Renderer::Draw(const std::vector<DrawItem>& items, const glm::mat4& view, const glm::mat4& proj, double time,
+                    bool textured, bool vertexColor, bool wireframe, bool lighting, bool fog) {
     glUseProgram(prog_);
+    glm::mat4 viewProj = proj * view;
     glUniformMatrix4fv(uViewProj_, 1, GL_FALSE, glm::value_ptr(viewProj));
+    glUniformMatrix4fv(uView_, 1, GL_FALSE, glm::value_ptr(view));
     glUniform1i(uTex_, 0);
     glUniform1i(uVColor_, vertexColor);
     glActiveTexture(GL_TEXTURE0);
@@ -226,13 +274,13 @@ void Renderer::Draw(const std::vector<DrawItem>& items, const glm::mat4& viewPro
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
     glUniform1f(uAlphaRef_, 0.25f);
-    DrawPass(items, time, textured, false);
+    DrawPass(items, time, textured, false, lighting, fog);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
     glUniform1f(uAlphaRef_, 0.01f);
-    DrawPass(items, time, textured, true);
+    DrawPass(items, time, textured, true, lighting, fog);
 
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);

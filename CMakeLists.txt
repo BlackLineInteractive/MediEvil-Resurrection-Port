@@ -57,6 +57,7 @@ add_library(medievil-core STATIC
     src/Core/World.cpp
     src/Core/Entity.cpp
     src/Core/Skeleton.cpp
+    src/Core/Land.cpp
 )
 target_include_directories(medievil-core PUBLIC src)
 target_link_libraries(medievil-core PUBLIC glm::glm)
