@@ -61,7 +61,7 @@ def main():
 
     print('vtable\tslots\tinstallers\tfirst_slots')
     for a in starts:
-        print(f'{a:08x}\t{len(vt[a])}\t{",".join(sorted(inst[a]))}\t{",".join(f"{x:08x}" for x in vt[a][:6])}')
+        print(f'{a:08x}\t{len(vt[a])}\t{",".join(sorted(inst[a]))}\t{",".join(f"{x:08x}" for x in vt[a])}')
 
 
 if __name__ == '__main__':

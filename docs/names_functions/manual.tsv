@@ -26,3 +26,18 @@ addr	name	comment
 00172c40	CWhackaZarokChallenge_Dump	"//---- CWhackaZarokChallenge::Dump ----//"
 00184344	CZLManagerBrain_dtor	"CZLManagerBrain::~CZLManagerBrain()"
 001844c4	CZLManagerBrain_dtor2	second ~CZLManagerBrain variant (complete vs deleting not yet determined)
+000315d4	SaveGame_Disable	"%5d: Savegame disabled by: %s"; registers "nosave" event with the caller's name
+00031564	SaveGame_Enable	removes the "nosave" event
+00271714	DebugPrintf	printf-style debug output (also used for fatal messages before trap)
+001b7c10	EventRegistry_Add	(registry, name, event)
+001b7aec	EventRegistry_Find	(registry, name)
+001b7c58	EventRegistry_RemoveByHash	(registry, HashName129(name))
+00289390	Pool_Alloc	returns NULL when EVENT_REGISTRY_NUM_POOL_SLOTS exhausted
+0019ada0	module_start	creates "user_main" thread
+0019ae44	user_main_crt0	newlib crt0: argv split, reent init, atexit(.fini), .init, main, exit
+00020cf8	main	thread priority 0x6F, async IO priority 0x5F, then GameMain
+00020e5c	GameMain	boot: systems init, redirection.bin, movie_sound_overrides.bin, logo movie, front end loop, intro movie, game loop
+00020d40	PlayMovie	(name without .pmf, skippable flag): "00_cambridge_logo", "e_fm_cs_001"
+001e7aac	EndFrame	called once per frame by every top-level loop
+00008f74	CGame_ctor	object of 0xB8 bytes created in GameMain
+0001a1b4	CFrontEndState_ctor	0x78-byte object; GameMain calls vtable[2] (Update) until it returns 0
