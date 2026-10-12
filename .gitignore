@@ -92,6 +92,8 @@ env/
 .Spotlight-V100
 .Trashes
 
+imgui.ini
+*.ini
 # Windows
 Thumbs.db
 ehthumbs.db

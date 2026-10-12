@@ -1,117 +1,115 @@
-# MediEvil: Resurrection (PSP, UCES00052 EU) — нотатки реверсу
+# MediEvil: Resurrection (PSP, UCES00052 EU) - Reverse Engineering Notes
 
-## 1. Образ диска
-- ISO9660, том `MEDIEVIL`, 1.45 ГБ. Розпаковка: `python3 -I tools/iso_extract.py <iso> extracted`
-  (bsdtar на macOS цей образ не читає). Повний список: `docs/iso_filelist.txt`.
+## 1. Disc Image
+- ISO9660, volume `MEDIEVIL`, 1.45 GB. Extraction: `python3 -I tools/iso_extract.py <iso> extracted`
+  (macOS bsdtar fails to read this image). Full file list: `docs/iso_filelist.txt`.
 
-## 2. Виконуваний код
-| Файл | Що це |
+## 2. Executable Code
+| File | Description |
 |---|---|
-| `SYSDIR/EBOOT.BIN` | `~PSP` зашифрований завантажувач `medboot` (18 КБ) |
-| `SYSDIR/BOOT.BIN` | той самий `medboot` у відкритому ELF: вантажить PRX-модулі й `main.prx` |
-| **`USRDIR/prx/main.prx`** | **уся гра**. Незашифрований ELF MIPS Allegrex (PRX, relocatable) |
-| `USRDIR/prx/*.prx` | стандартні модулі Sony (atrac3+, mpeg, sascore, adhoc) — не портуються, замінюються |
-| `USRDIR/UCES000{01,06,15}` | бонусні демо інших ігор (WipEout Pure, Ridge Racer?, …) — ігноруємо |
+| `SYSDIR/EBOOT.BIN` | `~PSP` encrypted loader `medboot` (18 KB) |
+| `SYSDIR/BOOT.BIN` | Same `medboot` in decrypted ELF: loads PRX modules and `main.prx` |
+| **`USRDIR/prx/main.prx`** | **Full game executable**. Decrypted MIPS Allegrex ELF (PRX, relocatable) |
+| `USRDIR/prx/*.prx` | Sony system modules (atrac3+, mpeg, sascore, adhoc) - not ported, stubbed/replaced |
+| `USRDIR/UCES000{01,06,15}` | Bonus game demos (WipEout Pure, Ridge Racer, etc.) - ignored |
 
-`main.prx`: `.text` 0x2C60C0 (~2.9 МБ коду, ~700k інструкцій), `.rodata` 0x77AC8, `.data` 0x12FD0,
-`.bss` 0xEBE74. `.symtab` порожній — символів немає. Є `.ctors` (~640 статичних
-конструкторів → C++), `.eh_frame`, `.gcc_except_table` → компілятор GCC (psp-gcc / SN).
-Релокації `.rel.*` типу 0x700000A0 (PRX) — потрібні, щоб завантажити в Ghidra правильно.
+`main.prx`: `.text` 0x2C60C0 (~2.9 MB code, ~700k instructions), `.rodata` 0x77AC8, `.data` 0x12FD0,
+`.bss` 0xEBE74. `.symtab` is stripped - no symbols. Contains `.ctors` (~640 static
+constructors -> C++), `.eh_frame`, `.gcc_except_table` -> GCC toolchain (psp-gcc / SN Systems).
+Relocations are `.rel.*` type 0x700000A0 (PRX) - needed to load into Ghidra properly.
 
-Імпортовані бібліотеки (точки інтеграції для порту — HAL):
-sceGe_user (графіка GE), sceDisplay, sceCtrl, sceAudio, sceSasCore, sceAtrac3plus,
-sceMpeg (відео .pmf), IoFileMgrForUser, ThreadManForUser, sceUtility (сейви/діалоги),
-sceRtc, scePower, sceUmdUser, sceNet* (adhoc мультиплеєр).
+Imported libraries (port integration points - HAL):
+sceGe_user (GE graphics), sceDisplay, sceCtrl, sceAudio, sceSasCore, sceAtrac3plus,
+sceMpeg (.pmf video), IoFileMgrForUser, ThreadManForUser, sceUtility (saves/dialogs),
+sceRtc, scePower, sceUmdUser, sceNet* (adhoc multiplayer).
 
-## 3. Архів ресурсів `USRDIR/gamedata.bin` (585 МБ)
-Усі зсуви в секторах по 2048 байт.
+## 3. Resource Archive `USRDIR/gamedata.bin` (585 MB)
+All offsets in 2048-byte sectors.
 
-**Заголовок:** `"TOCS"` u32 0x30, u32 81540, u32 1, далі 48 записів по 40 байт:
-`char name[32]; u32 tocSize; u32 tocSector;` — одна група на рівень
-(`global`, `01_danscrypt`, `02_graveyard`, … , тестові `ent_test`, `99_testbed`).
+**Header:** `"TOCS"` u32 0x30, u32 81540, u32 1, followed by 48 entries of 40 bytes each:
+`char name[32]; u32 tocSize; u32 tocSector;` - one group per level
+(`global`, `01_danscrypt`, `02_graveyard`, ..., test groups `ent_test`, `99_testbed`).
 
-**TOC групи** (`"TOC0"`):
+**Group TOC** (`"TOC0"`):
 ```
 u32 magic 'TOC0'; u32 nBlocks; u32 nAssets; u32 0
 Block  [nBlocks] 8B : u24 sector; u8 flags; u16 assetIndex; u16 nextCopy(0xFFFF=none)
-Asset  [nAssets] 20B: u32 nameHash; u32 size; char type[4]; u16 kind(1=файл,2=група);
+Asset  [nAssets] 20B: u32 nameHash; u32 size; char type[4]; u16 kind(1=file, 2=group);
                       u16 block; u16 bstLeft; u16 bstRight
 ```
-- `left/right` — бінарне дерево пошуку за `nameHash` (перевірено), ієрархії тут немає.
-- Дані лежать з `Block[asset.block].sector`, **без стиснення**. Блоки з `assetIndex != i` — дублікати
-  тих самих даних в інших місцях диска (для стрімінгу).
-- Друга половина таблиці TOCS (індекси ≥ 28) повторює імена груп — ймовірно, копії для 2-го шару UMD
-  або варіанти; не до кінця з'ясовано.
+- `left/right` - binary search tree keyed by `nameHash` (verified), no hierarchy here.
+- Data starts at `Block[asset.block].sector`, **uncompressed**. Blocks with `assetIndex != i` are duplicate
+  copies of the same data placed across disc sectors for streaming.
+- The second half of the TOCS table (indices >= 28) duplicates group names - likely copies for UMD layer 2
+  or variants; not yet fully verified.
 
-**Хеш імен** (`main.prx` `FUN_001be1e4`): `h = h*129 + (signed char)c`, старт 0, по імені файлу
-з розширенням, без шляху. Тип = перші 4 символи розширення у верхньому регістрі (`FUN_00222310`).
-`tools/namehash.py` відновлює імена зі словника рядків бінарника (129 непарне → суфікс можна
-«відкусити» аналітично): зараз 1 263 / 7 788 унікальних хешів. Без імен поки INST/SUBZ/TCD/ENTS/TNV/VOL/LOC*.
+**Name Hash** (`main.prx` `FUN_001be1e4`): `h = h*129 + (signed char)c`, initial 0, computed on filename
+with extension, without path. Type = first 4 characters of extension in uppercase (`FUN_00222310`).
+`tools/namehash.py` recovers names using the binary string dictionary (129 is odd -> suffix can be
+analytically stripped): currently 1,263 / 7,788 unique hashes resolved. Still unnamed: INST/SUBZ/TCD/ENTS/TNV/VOL/LOC*.
 
-Розпаковка: `python3 tools/gamedata_extract.py extracted/PSP_GAME/USRDIR/gamedata.bin assets --names docs/names.tsv`
-→ `assets/<NN>_<група>/<TYPE>/<idx>_<ім'я>`, і `_index.csv` у кожній групі. 13 120 файлів, 253 МБ.
+Extraction: `python3 tools/gamedata_extract.py extracted/PSP_GAME/USRDIR/gamedata.bin assets --names docs/names.tsv`
+-> `assets/<NN>_<group>/<TYPE>/<idx>_<name>`, and `_index.csv` in each group. 13,120 files, 253 MB.
 
-Магіки корисного навантаження: ANIM→`ACT4`, PSM→`PSM0` (текстура), INST→`BOX0`, SKEL→`SKE0`, MESH→`MOD0`,
-SUBZ→`SBZ0`, ENTS→`ENT0`, LAND→`LND0`, VOL→`MAP0`, LOC/NLOC→`LON1`, RLOC→`LOR0`, TNV→`TNV%`, BNK→без магіка.
+Payload magic numbers: ANIM->`ACT4`, PSM->`PSM0` (texture), INST->`BOX0`, SKEL->`SKE0`, MESH->`MOD0`,
+SUBZ->`SBZ0`, ENTS->`ENT0`, LAND->`LND0`, VOL->`MAP0`, LOC/NLOC->`LON1`, RLOC->`LOR0`, TNV->`TNV%`, BNK->no magic.
 
-Перепис типів (21 634 записи):
-SUBZ 60 МБ (підзони рівня), BNK 44 МБ (звукові банки), SKEL 41 МБ, PSM 39 МБ (ймовірно текстури/моделі
-PSP), ANIM 23 МБ, TCD/TNV (колізія / навмеш?), MESH, FLIP (флібуки/UI), ENTS (сутності),
-LAND/SNET, LOC/NLOC/RLOC (локалізація), SPL (сплайни), LIT/LTR/CCV (світло, колір).
-Кожен тип ще треба розібрати окремо.
+Type breakdown (21,634 records):
+SUBZ 60 MB (level subzones), BNK 44 MB (sound banks), SKEL 41 MB, PSM 39 MB (PSP textures/models),
+ANIM 23 MB, TCD/TNV (collision / navmesh?), MESH, FLIP (flipbooks/UI), ENTS (entities),
+LAND/SNET, LOC/NLOC/RLOC (localization), SPL (splines), LIT/LTR/CCV (lighting, vertex colors).
+Each type still needs to be reversed individually.
 
-**Відео:** `USRDIR/movies/*.pmf` — стандартний PSMF (H.264 + ATRAC3+), конвертується ffmpeg.
+**Video:** `USRDIR/movies/*.pmf` - standard PSMF container (H.264 + ATRAC3+), converts via ffmpeg.
 
 ## 4. Ghidra
-- Ghidra 12.1.3 (brew) + розширення **ghidra-allegrex v21.4** (`~/Library/ghidra/ghidra_12.1.3_PUBLIC/Extensions`).
-- Проєкт: `ghidra/MediEvil` → `main.prx`, лоадер «PSP Executable (ELF)», мова `Allegrex:LE:32`. Аналіз ~2 хв.
-- Headless-скрипти в `tools/ghidra_scripts`:
-  - `ExportOverview.java <outdir>` → `docs/ghidra/{functions,imports,strings,fourcc_refs}.tsv` (10 694 функції);
-  - `Decompile.java <outfile> <depth> <addr|dataAddr>...` → C для функцій (або тих, що посилаються на дані).
+- Ghidra 12.1.3 (brew) + extension **ghidra-allegrex v21.4** (`~/Library/ghidra/ghidra_12.1.3_PUBLIC/Extensions`).
+- Project: `ghidra/MediEvil` -> `main.prx`, loader "PSP Executable (ELF)", language `Allegrex:LE:32`. Analysis time ~2 min.
+- Headless scripts in `tools/ghidra_scripts`:
+  - `ExportOverview.java <outdir>` -> `docs/ghidra/{functions,imports,strings,fourcc_refs}.tsv` (10,694 functions);
+  - `Decompile.java <outfile> <depth> <addr|dataAddr>...` -> C pseudocode for functions (or callers referencing data).
   ```
-  JAVA_HOME=/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home \
-  /usr/local/Cellar/ghidra/12.1.3/libexec/support/analyzeHeadless ghidra MediEvil -process main.prx \
-    -noanalysis -readOnly -scriptPath tools/ghidra_scripts -postScript Decompile.java out.c 1 001be1e4
+  JAVA_HOME=/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home   /usr/local/Cellar/ghidra/12.1.3/libexec/support/analyzeHeadless ghidra MediEvil -process main.prx     -noanalysis -readOnly -scriptPath tools/ghidra_scripts -postScript Decompile.java out.c 1 001be1e4
   ```
-- Відомі функції: `001be1e4` hash129, `002723bc` strlen, `00272004` sprintf, `00272104` strcat,
-  `0022223c` basename, `00222380/00222310` розширення→FourCC, `00222740` завантаження ассета за іменем
-  (для ANIM пробує ще `<name>.comp`), `0020aba8` обробник чанків локалізації.
-- TODO: імпорти sce* поки без імен (`FUN_002c6xxx` у `.sceStub.text.*`) — розставити NID.
+- Identified functions: `001be1e4` hash129, `002723bc` strlen, `00272004` sprintf, `00272104` strcat,
+  `0022223c` basename, `00222380/00222310` extension->FourCC, `00222740` asset loader by name
+  (for ANIM also tries `<name>.comp`), `0020aba8` localization chunk handler.
+- TODO: sce* imports currently unnamed (`FUN_002c6xxx` in `.sceStub.text.*`) - resolve NIDs.
 
-## 5. План
-1. ✅ Розпаковка ISO, ідентифікація виконуваного коду та архіву.
-2. ✅ Екстрактор `gamedata.bin`, хеш імен знайдено (частково відновлені імена).
-3. ✅ Ghidra + ghidra-allegrex, `main.prx` проаналізовано. ⏳ розмітити NID імпортів.
-4. Знайти в коді парсери кожного типу ассетів (шукати FourCC-константи) → описати формати.
-5. Вибір стратегії порту:
-   - **(а) статична рекомпіляція** MIPS→C (як N64Recomp / psxrecomp) + HLE шар для sce* API та GE→OpenGL/Vulkan;
-   - **(б) повний реверс до C++** функція за функцією (decomp-проєкт, роки роботи);
-   - **(в) новий рушій** на розібраних форматах ресурсів (найшвидше дає видимий результат, але логіку гри писати заново).
-   Рекомендація: почати з (а) — найреалістичніший шлях до гри, що запускається нативно.
+## 5. Plan
+1. [x] Unpack ISO, identify executable code and archive format.
+2. [x] `gamedata.bin` extractor, name hash identified (partially recovered filenames).
+3. [x] Ghidra + ghidra-allegrex, `main.prx` analyzed. [ ] resolve sce* import NIDs.
+4. Locate chunk parsers for each asset type in code (search FourCC constants) -> document formats.
+5. Port strategy selection:
+   - **(a) Static recompiler** MIPS->C (like N64Recomp / psxrecomp) + HLE layer for sce* API and GE->OpenGL/Vulkan;
+   - **(b) Full C++ decompilation** function-by-function (traditional decomp project, long timeframe);
+   - **(c) Cleanroom engine** on top of reversed file formats (fastest visual progress, but game logic rewritten from scratch).
+   Recommendation: start with (a) - most direct path to a natively running game.
 
-## 6. Формати геометрії й текстур (підтверджено рендером)
-Чанк: `tag[4], u32 size, payload` або контейнер `tag[4], u32 0, u32 size, children`. Дамп: `tools/chunkdump.py`.
+## 6. Geometry and Texture Formats (Verified via Render)
+Chunk: `tag[4], u32 size, payload` or container `tag[4], u32 0, u32 size, children`. Dump tool: `tools/chunkdump.py`.
 
-**PSM0** (текстура): `'PSM0', u16 mip(0|3), u8 GE-формат (1=5551, 4=CLUT4, 5=CLUT8), u8 flags (0x80=swizzle 16×8),
-u16 w, u16 h, u32 ?`; для CLUT — 16 B заголовок палітри, палітра RGBA8888 з 0x20, далі пікселі. `tools/psm2png.py`.
+**PSM0** (texture): `'PSM0', u16 mip(0|3), u8 GE format (1=5551, 4=CLUT4, 5=CLUT8), u8 flags (0x80=swizzle 16x8),
+u16 w, u16 h, u32 ?`; for CLUT - 16 B palette header, RGBA8888 palette starting at 0x20, followed by raw pixels. `tools/psm2png.py`.
 
-**FRG0** (фрагмент геометрії, спільний для SUBZ і MESH):
-`VFT0/VFT1` (u32 GE vtype, u32 stride[, u32 flags]) · `TXF0` (float uScale, vScale, uOff, vOff) ·
-`FVT1` ("PAD"-заповнення до 16 B, потім вершини) · `FSU0` (u16 довжини triangle strip, 0-термінатор).
-Типові vtype: 0x1BE (UV u16, колір 8888, нормаль s8, позиція float; 24 B), 0x1A2 (без кольору; 20 B).
+**FRG0** (geometry fragment, shared by SUBZ and MESH):
+`VFT0/VFT1` (u32 GE vtype, u32 stride[, u32 flags]) * `TXF0` (float uScale, vScale, uOff, vOff) *
+`FVT1` ("PAD" padding to 16 B, followed by vertices) * `FSU0` (u16 triangle strip lengths, 0-terminated).
+Common vtypes: 0x1BE (UV u16, color 8888, normal s8, position float; 24 B), 0x1A2 (no color; 20 B).
 
-**MESH/MOD0**: `MOD0{NAME, MDI2, FMH0{NAME, MFL1, FRG0…, TXI1}}`, потім `TEX0`, `PADS`.
-**SUBZ/SBZ0**: `SBZ0{BOX0, DPD0, SZR0{FRG0×N}, OCT0{OMM0|OCM0, OCT0…, FMH0{MFL1, FRR0, TXI1, CNE0}}, INS0{…}}`, `TEX0`.
-- `FRR0`: u16 індекси фрагментів пулу SZR0 (0xFFFF кінець; біт 0x8000 — ще невідомо).
-- `TXI1`: на кожен посилальний фрагмент `{u8 індекс у TEX0, u8 0xFF}`, кінець `FF FF`.
-- `TEX0`: записи `0x03 "T:name.psm" 0`; ім'я → hash129 → PSM у тій самій групі.
-- `INS0` (`INN0/INM1/INL4`) — розстановка пропсів, ще не розібрано.
+**MESH/MOD0**: `MOD0{NAME, MDI2, FMH0{NAME, MFL1, FRG0..., TXI1}}`, followed by `TEX0`, `PADS`.
+**SUBZ/SBZ0**: `SBZ0{BOX0, DPD0, SZR0{FRG0*N}, OCT0{OMM0|OCM0, OCT0..., FMH0{MFL1, FRR0, TXI1, CNE0}}, INS0{...}}`, `TEX0`.
+- `FRR0`: u16 fragment indices into SZR0 pool (0xFFFF terminator; bit 0x8000 unknown).
+- `TXI1`: per referencing fragment `{u8 index in TEX0, u8 0xFF}`, ends with `FF FF`.
+- `TEX0`: entries `0x03 "T:name.psm" 0`; name -> hash129 -> PSM within the same group.
+- `INS0` (`INN0/INM1/INL4`) - prop placement, not yet fully reversed.
 
-## 7. В'юер (`src/`, як у SilentHillOrigins-LevelViewer)
-C++17, CMake, SDL2 + GLEW + GLM + ImGui. `medievil-core` (без GL): GameData, Chunk, Texture, Geometry.
+## 7. Viewer (`src/`, matching SilentHillOrigins-LevelViewer)
+C++17, CMake, SDL2 + GLEW + GLM + ImGui. `medievil-core` (headless, no GL): GameData, Chunk, Texture, Geometry.
 ```
 cmake -S . -B build -G Ninja && cmake --build build
-./build/medievil-viewer                          # інтерактивно
-./build/medievil-viewer --group 2 --shot out.png # рендер рівня в PNG без вікна
+./build/medievil-viewer                          # interactive
+./build/medievil-viewer --group 2 --shot out.png # offscreen level render to PNG
 ./build/medievil-viewer --model all_switch.mesh --shot out.png
 ```
