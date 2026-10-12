@@ -210,3 +210,27 @@ start when game restarts).
   +0xA4), 0x740 / 0x750 (5 anims, 0x40 = compressed rotation stream `FUN_001a1a38`, not supported yet).
 - **ATBL**: 8-byte header, then 56-byte records `{u32 animHash, u32 state, floats...}`; state 85 (0x55) =
   wait (`zombie_guard_wait.anim`). The viewer plays `<model>_wait/_idle/...` or the state-85 entry.
+
+## 13. Zone lighting (LAND / LGT1)
+
+The GE never doubles colours: TFUNC is always written without the 2x bit (texture DL `FUN_00239f38`,
+`FUN_001ea014`) and the texture function is always modulate (`FUN_00239030` defaults). Levels are drawn
+with GE lighting on and `sceGuColorMaterial(7)`, so the baked vertex colour is the material:
+
+    colour = clamp(ambient * vcol + sum_i lightColour_i * vcol * max(dot(N, dir_i), 0)) * texture
+
+- **LAND** = `LND0 { PTL0* (portals), ZNE0* }`, `ZNE0 { NAME, LGT1, ZDT0, WND0, RZN0 }`.
+- **ZDT0**: `u32 0, u8 1,1,1, u8 zoneIndex, float min[3], float size[3], u32`. The zone boxes are
+  exactly the SUBZ bounds, so each sub-zone maps to one zone.
+- **LGT1** (`FUN_001f3920`): the payload starts at the next 16-byte boundary relative to the asset start.
+  It holds vec4s: object ambient, fog colour (0..255), fog near/far, world ambient, light colour ×2,
+  light direction ×2, then `u8 on[2]`. LGT0 has no leading object ambient.
+- **`FUN_00216a58`** (static time of day) puts these in globals. **`FUN_0021757c`** builds the list of
+  enabled directional lights. **`FUN_00216cb4`** emits `sceGuLight(i, DIRECTIONAL, DIFFUSE, dir)` and
+  sets the light diffuse colour and `sceGuAmbient`: world ambient for sub-zones, object ambient for
+  models. The direction is the GE light vector, pointing *towards* the light. For example, Dan's Crypt
+  lava room light 0 is (0.12, -0.99, 0.11) in orange: the glow from the lava below.
+- **`FUN_001f7038`** (sub-zone draw) also adds up to 4−n point and spot lights from the LIT0 lights,
+  with attenuation `sceGuLightAtt(0, 0, 1/r²)`. Not ported yet.
+- Fog: `sceGuFog(near, far, fogColour)`, linear in view depth.
+- Dan's Crypt lives in the global group (group 0, `01_danscrypt.land`); the lava is `lavabubble_flip.flip`.

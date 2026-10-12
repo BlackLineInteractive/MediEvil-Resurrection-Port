@@ -8,6 +8,7 @@
 #include "Core/Geometry.h"
 #include "Core/World.h"
 #include "Core/Entity.h"
+#include "Core/Land.h"
 #include "Core/Skeleton.h"
 #include "Viewer/Renderer.h"
 
@@ -138,6 +139,7 @@ struct App {
     std::unordered_map<std::string, SkinnedSource> skinned;
     std::unordered_map<std::string, std::shared_ptr<const Animation>> anims;
     std::vector<DrawItem> items;
+    std::vector<Zone> zones;   // LAND zones of the loaded level (lighting, fog)
     int group = -1;
     bool verbose = false;
     std::string status;
@@ -146,6 +148,7 @@ struct App {
 
     void Clear() {
         items.clear();
+        zones.clear();
         instanceMeshes.clear();
         entityMeshes.clear();
         meshTris.clear();
@@ -237,6 +240,7 @@ struct App {
                 std::string base = e.ResourceBaseName();
                 if (base.empty()) { ++noModel; continue; }
                 glm::mat4 world = glm::translate(glm::mat4(1.0f), e.Position()) * glm::mat4_cast(e.Rotation());
+                const ZoneLighting* light = ZoneLight(e.Position(), e.Position());
                 if (const SkinnedSource* src = Skinned(base, g)) {
                     AnimatedModel am;
                     am.bind = src->mesh;
@@ -246,20 +250,25 @@ struct App {
                     meshes.push_back(ren.Upload(*am.bind, gd, g, true));
                     am.mesh = meshes.back().get();
                     meshTris[am.mesh] = am.bind->indices.size() / 3;
-                    Place(am.mesh, world, meshTris[am.mesh]);
+                    Place(am.mesh, world, meshTris[am.mesh], light, true);
                     animated.push_back(std::move(am));
                     ++placed;
                     continue;
                 }
                 const GpuMesh* m = EntityMesh(base, g);
                 if (!m) { ++missing; continue; }
-                Place(m, world, meshTris[m]);
+                Place(m, world, meshTris[m], light, true);
                 ++placed;
             }
         }
     }
-    void Place(const GpuMesh* mesh, const glm::mat4& model, size_t triCount) {
-        items.push_back({mesh, model});
+    const ZoneLighting* ZoneLight(glm::vec3 lo, glm::vec3 hi) const {
+        int z = FindZone(zones, lo, hi);
+        return z < 0 ? nullptr : &zones[z].light;
+    }
+    void Place(const GpuMesh* mesh, const glm::mat4& model, size_t triCount, const ZoneLighting* light = nullptr,
+               bool object = false) {
+        items.push_back({mesh, model, light, object});
         tris += triCount;
         for (int i = 0; i < 8; ++i) {
             glm::vec3 c(i & 1 ? mesh->bmax.x : mesh->bmin.x, i & 2 ? mesh->bmax.y : mesh->bmin.y,
@@ -275,6 +284,13 @@ struct App {
         group = g;
         int ok = 0, bad = 0, placed = 0, missing = 0;
         std::unordered_map<uint32_t, size_t> instTris;
+        for (const auto& a : gd.Groups()[g].assets)
+            if (a.kind == 1 && a.type == FourCC("LAND")) LoadLand(gd.Read(a), zones);
+        if (verbose)
+            for (const auto& z : zones)
+                printf("zone %s: (%.1f %.1f %.1f) - (%.1f %.1f %.1f) ambient %.2f %.2f %.2f, fog %.0f..%.0f\n", z.name.c_str(),
+                       z.bmin.x, z.bmin.y, z.bmin.z, z.bmax.x, z.bmax.y, z.bmax.z, z.light.worldAmbient.x,
+                       z.light.worldAmbient.y, z.light.worldAmbient.z, z.light.fogNear, z.light.fogFar);
         for (const auto& a : gd.Groups()[g].assets) {
             if (a.kind != 1 || a.type != FourCC("SUBZ")) continue;
             SubZone sz;
@@ -284,7 +300,8 @@ struct App {
                 printf("subzone %s: bounds (%.1f %.1f %.1f) - (%.1f %.1f %.1f), %zu instances\n", gd.NameOf(a.hash).c_str(),
                        sz.mesh.bmin.x, sz.mesh.bmin.y, sz.mesh.bmin.z, sz.mesh.bmax.x, sz.mesh.bmax.y, sz.mesh.bmax.z,
                        sz.instances.size());
-            Place(Upload(sz.mesh, g), glm::mat4(1.0f), sz.mesh.indices.size() / 3);
+            const ZoneLighting* light = ZoneLight(sz.mesh.bmin, sz.mesh.bmax);
+            Place(Upload(sz.mesh, g), glm::mat4(1.0f), sz.mesh.indices.size() / 3, light);
             if (!withInstances) continue;
             for (const auto& inst : sz.instances) {
                 if (inst.model >= sz.models.size() || sz.models[inst.model].mode == -1) continue;
@@ -302,7 +319,7 @@ struct App {
                     it = instanceMeshes.emplace(h, gm).first;
                 }
                 if (!it->second) { ++missing; continue; }
-                Place(it->second, inst.world, instTris[h]);
+                Place(it->second, inst.world, instTris[h], light);
                 ++placed;
             }
         }
@@ -406,6 +423,7 @@ int main(int argc, char** argv) {
     printf("%s\n", app.status.c_str());
 
     bool textured = true, vcolor = true, wire = false, running = true;
+    bool lighting = Arg(argc, argv, "--lighting", "1") != "0", fog = Arg(argc, argv, "--fog", "1") != "0";
     char filter[64] = "";
     int listGroup = startGroup < 0 ? 0 : startGroup;
     Uint64 last = SDL_GetPerformanceCounter();
@@ -467,7 +485,7 @@ int main(int argc, char** argv) {
                        lo.y, hi.y);
             }
         }
-        app.ren.Draw(app.items, proj * view, animTime, textured, vcolor, wire);
+        app.ren.Draw(app.items, view, proj, animTime, textured, vcolor, wire, lighting, fog);
 
         if (!shot.empty()) {
             std::vector<uint8_t> px(size_t(fbw) * fbh * 4);
@@ -487,6 +505,8 @@ int main(int argc, char** argv) {
         ImGui::Checkbox("Textures", &textured); ImGui::SameLine();
         ImGui::Checkbox("Vertex colour", &vcolor); ImGui::SameLine();
         ImGui::Checkbox("Wire", &wire);
+        ImGui::Checkbox("Lighting (LGT1)", &lighting); ImGui::SameLine();
+        ImGui::Checkbox("Fog", &fog);
         ImGui::Checkbox("Instances (INS0)", &withInstances); ImGui::SameLine();
         ImGui::Checkbox("Entities (ENTS)", &withEntities); ImGui::SameLine();
         ImGui::Checkbox("Animate", &app.animate);
