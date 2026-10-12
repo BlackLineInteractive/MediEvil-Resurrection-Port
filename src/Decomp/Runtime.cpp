@@ -27,7 +27,11 @@ void Fatal(const char* fmt, ...) {
 
 void Unimplemented(uint32_t addr, const char* name) {
     static std::unordered_set<uint32_t> seen;
-    if (seen.insert(addr).second) std::fprintf(stderr, "[psp] unimplemented %08x %s\n", addr, name);
+    if (seen.insert(addr).second) {
+        std::fprintf(stderr, "[psp] unimplemented %08x %s (after", addr, name);
+        for (uint32_t i = 4; i > 0; i--) std::fprintf(stderr, " %08x", g_trace[(g_tracePos - i) & 255]);
+        std::fprintf(stderr, ")\n");
+    }
 }
 
 // Allegrex VFPU constants (vcst), index = encoded constant number.

@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     ::psp::Caller<&game::f_0020f284>{}();   // engine init (FUN_001e77dc) step: acos table at 0x3de210 used by the stick code
     std::printf("acos table [0] %.4f [4096] %.4f [8192] %.4f [16384] %.4f; acosf(0.5) = %.4f\n", float(GP<float>(0x3de210)[0]),
                 float(GP<float>(0x3de210)[4096]), float(GP<float>(0x3de210)[8192]), float(GP<float>(0x3de210)[16384]),
-                BitCast<float>(uint32_t(game::f_00240424(U4(0.5f)))));
+                float(::psp::Caller<&game::f_00240424>{}(BitCast<uint32_t>(0.5f))));
     // pad stick filter FUN_001ea594(pad + 0xc4): raw axes at +6/+7 floats, result x,y at +0/+1, mag +3
     uint32_t pad = kHeapBase + 0x2000;
     std::printf("FUN_001ea594 raw stick -> filtered (x, y, magnitude)\n");

@@ -496,7 +496,7 @@ struct RV {
     template <class T> RV(const T& t) : v(UB(t)) {}
     RV() : v(0) {}
     operator U4() const { return U4(uint32_t(v)); }
-    explicit operator float() const { return BitCast<float>(uint32_t(v)); }
+    operator float() const { return BitCast<float>(uint32_t(v)); }   // the f0 / v0 bits
     template <class I, std::enable_if_t<std::is_integral_v<I>, int> = 0> operator I() const { return I(v); }
     template <class T> operator GP<T>() const { return GP<T>(uint32_t(v)); }
 };
