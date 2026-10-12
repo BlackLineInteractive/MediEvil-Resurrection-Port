@@ -88,3 +88,30 @@ LAND/SNET, LOC/NLOC/RLOC (локалізація), SPL (сплайни), LIT/LTR
    - **(б) повний реверс до C++** функція за функцією (decomp-проєкт, роки роботи);
    - **(в) новий рушій** на розібраних форматах ресурсів (найшвидше дає видимий результат, але логіку гри писати заново).
    Рекомендація: почати з (а) — найреалістичніший шлях до гри, що запускається нативно.
+
+## 6. Формати геометрії й текстур (підтверджено рендером)
+Чанк: `tag[4], u32 size, payload` або контейнер `tag[4], u32 0, u32 size, children`. Дамп: `tools/chunkdump.py`.
+
+**PSM0** (текстура): `'PSM0', u16 mip(0|3), u8 GE-формат (1=5551, 4=CLUT4, 5=CLUT8), u8 flags (0x80=swizzle 16×8),
+u16 w, u16 h, u32 ?`; для CLUT — 16 B заголовок палітри, палітра RGBA8888 з 0x20, далі пікселі. `tools/psm2png.py`.
+
+**FRG0** (фрагмент геометрії, спільний для SUBZ і MESH):
+`VFT0/VFT1` (u32 GE vtype, u32 stride[, u32 flags]) · `TXF0` (float uScale, vScale, uOff, vOff) ·
+`FVT1` ("PAD"-заповнення до 16 B, потім вершини) · `FSU0` (u16 довжини triangle strip, 0-термінатор).
+Типові vtype: 0x1BE (UV u16, колір 8888, нормаль s8, позиція float; 24 B), 0x1A2 (без кольору; 20 B).
+
+**MESH/MOD0**: `MOD0{NAME, MDI2, FMH0{NAME, MFL1, FRG0…, TXI1}}`, потім `TEX0`, `PADS`.
+**SUBZ/SBZ0**: `SBZ0{BOX0, DPD0, SZR0{FRG0×N}, OCT0{OMM0|OCM0, OCT0…, FMH0{MFL1, FRR0, TXI1, CNE0}}, INS0{…}}`, `TEX0`.
+- `FRR0`: u16 індекси фрагментів пулу SZR0 (0xFFFF кінець; біт 0x8000 — ще невідомо).
+- `TXI1`: на кожен посилальний фрагмент `{u8 індекс у TEX0, u8 0xFF}`, кінець `FF FF`.
+- `TEX0`: записи `0x03 "T:name.psm" 0`; ім'я → hash129 → PSM у тій самій групі.
+- `INS0` (`INN0/INM1/INL4`) — розстановка пропсів, ще не розібрано.
+
+## 7. В'юер (`src/`, як у SilentHillOrigins-LevelViewer)
+C++17, CMake, SDL2 + GLEW + GLM + ImGui. `medievil-core` (без GL): GameData, Chunk, Texture, Geometry.
+```
+cmake -S . -B build -G Ninja && cmake --build build
+./build/medievil-viewer                          # інтерактивно
+./build/medievil-viewer --group 2 --shot out.png # рендер рівня в PNG без вікна
+./build/medievil-viewer --model all_switch.mesh --shot out.png
+```
