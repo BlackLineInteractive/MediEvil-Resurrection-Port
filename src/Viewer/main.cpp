@@ -11,7 +11,7 @@
 #include "Core/Skeleton.h"
 #include "Viewer/Renderer.h"
 
-#include <GL/glew.h>
+#include "Viewer/GLPlatform.h"
 #include <SDL.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -355,11 +355,18 @@ int main(int argc, char** argv) {
     app.verbose = !shot.empty();
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
+#if defined(MED_GLES)
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+#else
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+#endif
     Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
     if (!shot.empty()) flags |= SDL_WINDOW_HIDDEN;
     SDL_Window* win = SDL_CreateWindow("MediEvil Resurrection Viewer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -374,7 +381,11 @@ int main(int argc, char** argv) {
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForOpenGL(win, ctx);
+#if defined(MED_GLES)
+    ImGui_ImplOpenGL3_Init("#version 300 es");
+#else
     ImGui_ImplOpenGL3_Init("#version 410 core");
+#endif
 
     Camera cam;
     if (!shot.empty()) {

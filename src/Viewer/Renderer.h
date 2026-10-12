@@ -2,7 +2,7 @@
 #include "Core/GameData.h"
 #include "Core/Geometry.h"
 
-#include <GL/glew.h>
+#include "Viewer/GLPlatform.h"
 #include <glm/glm.hpp>
 
 #include <memory>

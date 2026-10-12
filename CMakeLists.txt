@@ -5,6 +5,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(MED_USE_GLES "Build with OpenGL ES 3.0 backend" ON)
+if(MED_USE_GLES)
+    add_compile_definitions(MED_GLES IMGUI_IMPL_OPENGL_ES3)
+endif()
+
+
 include(FetchContent)
 
 # Pinned for the same reason as in the Silent Hill toolkit: an unpinned master changes API under us.

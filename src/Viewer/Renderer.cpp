@@ -8,6 +8,36 @@
 
 namespace med {
 
+#if defined(MED_GLES)
+static const char* kVS = R"(#version 300 es
+precision highp float;
+layout(location=0) in vec3 aPos;
+layout(location=1) in vec3 aNrm;
+layout(location=2) in vec2 aUV;
+layout(location=3) in vec4 aCol;
+uniform mat4 uViewProj, uModel;
+out vec2 vUV; out vec4 vCol; out vec3 vNrm;
+void main() {
+    vUV = aUV; vCol = aCol; vNrm = mat3(uModel) * aNrm;
+    gl_Position = uViewProj * uModel * vec4(aPos, 1.0);
+})";
+
+// PSP vertex colours use 0x80 as 1.0 (baked lighting), hence the x2.
+static const char* kFS = R"(#version 300 es
+precision mediump float;
+precision mediump sampler2D;
+in vec2 vUV; in vec4 vCol; in vec3 vNrm;
+uniform sampler2D uTex; uniform bool uTextured, uVColor; uniform float uAlphaRef;
+out vec4 frag;
+void main() {
+    vec4 t = uTextured ? texture(uTex, vUV) : vec4(1.0);
+    vec4 c = uVColor ? vec4(min(vCol.rgb * 2.0, vec3(2.0)), min(vCol.a * 2.0, 1.0)) : vec4(1.0);
+    if (!uVColor) c.rgb *= 0.55 + 0.45 * abs(normalize(vNrm).y);
+    vec4 o = t * c;
+    if (o.a < uAlphaRef) discard;
+    frag = o;
+})";
+#else
 static const char* kVS = R"(#version 410 core
 layout(location=0) in vec3 aPos;
 layout(location=1) in vec3 aNrm;
@@ -33,6 +63,7 @@ void main() {
     if (o.a < uAlphaRef) discard;
     frag = o;
 })";
+#endif
 
 static GLuint Compile(GLenum type, const char* src) {
     GLuint s = glCreateShader(type);
@@ -188,7 +219,9 @@ void Renderer::Draw(const std::vector<DrawItem>& items, const glm::mat4& viewPro
     glActiveTexture(GL_TEXTURE0);
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
+    #if !defined(MED_GLES)
     glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
+#endif
 
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
@@ -203,7 +236,9 @@ void Renderer::Draw(const std::vector<DrawItem>& items, const glm::mat4& viewPro
 
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
+    #if !defined(MED_GLES)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
     glBindVertexArray(0);
 }
 
