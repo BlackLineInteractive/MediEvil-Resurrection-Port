@@ -399,6 +399,7 @@ Runtime model (`src/Decomp/Runtime.h`):
 - Register pass-through: a wrapper such as newlib `acosf` calls `__ieee754_acosf()` with no arguments because
   f12 is never touched. Calls with fewer arguments than the callee takes get the caller's own parameter in the
   same EABI register (an `undefined4` parameter may stand for a float register).
+- MIPS EABI 64-bit argument alignment: 64-bit integers (`long long`, `SceOff`) require alignment to even-odd register pairs ($a2:$a3). In calls like `sceIoLseek(int fd, SceOff offset, int whence)`, $a0 is fd, $a1 is skipped padding, $a2:$a3 holds offset, and $t0 holds whence. Ghidra prototypes now explicitly model this (`int fd, int _pad, uint offset_lo, uint offset_hi, int whence`), fixing seek offsets from corrupting TOC reads.
 - `Boot()` loads the image, `RunStaticCtors()` runs `.ctors` (0x3527a8, 642 entries, all 640 run cleanly).
   634 functions that only `.ctors`/vtables point at were created with `CreateFunctions.java`
   (`?addr` = only if no function contains it, to keep switch targets intact).

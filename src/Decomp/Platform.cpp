@@ -145,15 +145,19 @@ PSPCALL(sceIoLseek) {
     UNUSED;
     FILE* f = Fd(a0);
     if (!f) return uint64_t(-1);
-    // EABI: fd in a0, the 64-bit offset in the next register (positional), whence after it
-    // Ghidra cannot place 'whence' after the 64-bit register pair and leaves it uninitialised: the game
-    // only seeks archives from the start, so anything that is not a valid whence means SEEK_SET
-    uint32_t whence = uint32_t(a2) <= 2 ? uint32_t(a2) : 0;
-    std::fseek(f, long(uint32_t(a1)), int(whence));
-    TRACE("lseek fd %u %d whence %u -> %ld\n", uint32_t(a0), int32_t(uint32_t(a1)), uint32_t(a2), std::ftell(f));
+    // PSP EABI aligns 64-bit arguments to even register pairs ($a2:$a3).
+    // a0: fd, a1: _pad, a2: offset_lo, a3: offset_hi, a4: whence ($t0)
+    int64_t offset = (int64_t(int32_t(uint32_t(a3))) << 32) | uint32_t(a2);
+    int whence = int(uint32_t(a4));
+    std::fseek(f, long(offset), whence);
+    TRACE("lseek fd %u %lld whence %d -> %ld\n", uint32_t(a0), (long long)offset, whence, std::ftell(f));
     return uint64_t(std::ftell(f));
 }
-PSPCALL(sceIoLseekAsync) { UNUSED; g_asyncResult[int(uint32_t(a0))] = int64_t(PSP_sceIoLseek(a0, a1, a2, 0, 0, 0, 0, 0)); return 0; }
+PSPCALL(sceIoLseekAsync) {
+    UNUSED;
+    g_asyncResult[int(uint32_t(a0))] = int64_t(PSP_sceIoLseek(a0, a1, a2, a3, a4, 0, 0, 0));
+    return 0;
+}
 PSPCALL(sceIoWaitAsync) {
     UNUSED;
     int64_t r = g_asyncResult[int(uint32_t(a0))];
