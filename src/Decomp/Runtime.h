@@ -477,7 +477,7 @@ struct NumF {
     float v;
     template <class A> NumF(const A& a) {
         if constexpr (std::is_arithmetic_v<A>) v = float(a);
-        else if constexpr (std::is_same_v<A, U4>) v = float(int32_t(a.v));
+        else if constexpr (std::is_same_v<A, U4>) v = BitCast<float>(a.v);   // undefined4 -> float is a reread
         else if constexpr (std::is_same_v<A, VS>) v = a.f;
         else if constexpr (std::is_convertible_v<A, float>) v = float(a);   // Field / RV lanes hold floats
         else v = float(int32_t(UB(a)));

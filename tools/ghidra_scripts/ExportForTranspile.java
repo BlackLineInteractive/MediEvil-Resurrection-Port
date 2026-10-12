@@ -149,7 +149,18 @@ public class ExportForTranspile extends GhidraScript {
             ClangToken u = (ClangToken) toks.get(m);
             String x = u.getText();
             if (x.equals("(")) depth++;
-            else if (x.equals(")")) { if (--depth == 0) break; }
+            else if (x.equals(")")) {
+                if (--depth == 0) {
+                    // postfix operators after the group: (&DAT_x)[i], (...)->f
+                    for (int q = m + 1, seen = 0; q < toks.size() && seen < 2; q++) {
+                        ClangToken v = (ClangToken) toks.get(q);
+                        if (v.getText().trim().isEmpty()) continue;
+                        seen++;
+                        if (feedsCast(v.getPcodeOp())) return true;
+                    }
+                    break;
+                }
+            }
             else if (depth == 1 && feedsCast(u.getPcodeOp())) return true;
         }
         return false;

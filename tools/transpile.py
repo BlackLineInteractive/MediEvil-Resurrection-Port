@@ -192,6 +192,7 @@ def rewrite_types(code, unknown):
 
 
 unknown_struct_names = set()
+SIGS = {}   # addr -> [(name, is_float)] of every generated function
 
 
 def match_paren_back(s, i):
@@ -396,11 +397,76 @@ def gen_function(f, names, faddr_of, unknown, stub):
         i += 1
     body = ''.join(out)
     body = re.sub(r'\(\*\(\*GP<GP<uint8_t>>\((0x[0-9a-f]+u)\)\)\)\(', r'(*GP<GP<code>>(\1))(', body)
+    if SIGS:
+        body = fill_passthrough(body, param_info(plist), SIGS)
     frame = ''
     if stack or uses_frame[0]:
         frame = '\n  ::psp::Frame fr(%du);' % (-minoff + 16)
     body = body.replace('{', '{' + frame, 1)
     return sig, body
+
+
+def param_info(plist):
+    """[(name, is_float)] for a rewritten parameter list."""
+    out = []
+    for p in plist:
+        m = re.match(r'^(.*?)(' + ID + r')$', p.strip())
+        ty = (m.group(1) if m else p).strip()
+        out.append((m.group(2) if m else '', ty in ('float', 'double', 'float10')))
+    return out
+
+
+def split_args(s):
+    out, depth, cur = [], 0, ''
+    for ch in s:
+        if ch in '(<[{':
+            depth += 1
+        elif ch in ')>]}':
+            depth -= 1
+        if ch == ',' and depth == 0:
+            out.append(cur); cur = ''
+        else:
+            cur += ch
+    if cur.strip():
+        out.append(cur)
+    return out
+
+
+def fill_passthrough(body, own, sigs):
+    """Calls with fewer arguments than the callee takes: EABI passes the caller's own argument registers
+    through unchanged (Ghidra drops them), so supply the caller's parameter in the same register."""
+    own_i = [n for n, f in own if not f]
+    own_f = [n for n, f in own if f]
+    pat = re.compile(r'::psp::Caller<&f_([0-9a-f]{8})>\{\}\(')
+    pos = 0
+    while True:
+        m = pat.search(body, pos)
+        if not m:
+            return body
+        a = int(m.group(1), 16)
+        start = m.end()
+        depth, k = 1, start
+        while k < len(body) and depth:
+            if body[k] == '(':
+                depth += 1
+            elif body[k] == ')':
+                depth -= 1
+            k += 1
+        args = split_args(body[start:k - 1])
+        callee = sigs.get(a)
+        if callee and len(args) < len(callee):
+            ni = sum(1 for _, f in callee[:len(args)] if not f)
+            nf = sum(1 for _, f in callee[:len(args)] if f)
+            extra = []
+            for _, isf in callee[len(args):]:
+                if isf:
+                    extra.append(own_f[nf] if nf < len(own_f) else '0.0f'); nf += 1
+                else:
+                    extra.append(own_i[ni] if ni < len(own_i) else '0'); ni += 1
+            new = ', '.join([x.strip() for x in args] + extra)
+            body = body[:start] + new + body[k - 1:]
+            k = start + len(new) + 1
+        pos = start
 
 
 KEYWORDS = {'if', 'else', 'while', 'for', 'do', 'switch', 'case', 'default', 'return', 'goto', 'break', 'continue',
@@ -453,6 +519,10 @@ def main():
         stubbed = {int(l.split()[0], 16) for l in open(stub_list) if l.strip()}
     funcs, names = load(args.indir)
     unknown = set()
+    for a, f in funcs.items():
+        h = find_header(f.text, f.name) if not f.nid else None
+        if h:
+            SIGS[a] = param_info([rewrite_types(p, set()) for p in parse_params(h[1]) if p.strip() != '...'])
     decls, imports, gen, thunks = [], [], {}, []
     for a, f in sorted(funcs.items()):
         if f.nid:
