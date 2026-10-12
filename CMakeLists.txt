@@ -72,3 +72,18 @@ add_executable(medievil-viewer
 target_include_directories(medievil-viewer PRIVATE ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 target_link_libraries(medievil-viewer PRIVATE medievil-core ${MED_SDL2_TARGETS} GLEW::GLEW OpenGL::GL)
 target_compile_definitions(medievil-viewer PRIVATE GL_SILENCE_DEPRECATION)
+
+# ── medievil-game: main.prx translated to C++ by tools/transpile.py ──────────
+# decomp/cpp is generated locally (tools/ghidra_scripts/ExportForTranspile.java, then
+# tools/transpile_build.sh) because it is derived from the game binary.
+file(GLOB MED_GAME_GEN CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/decomp/cpp/*.cpp)
+if(MED_GAME_GEN)
+    add_library(medievil-game STATIC src/Decomp/Runtime.cpp src/Decomp/Memory.cpp ${MED_GAME_GEN})
+    target_include_directories(medievil-game PUBLIC src decomp/cpp)
+    # guest memory is accessed through reinterpret_cast, and MIPS integer math wraps
+    target_compile_options(medievil-game PRIVATE -w -fno-strict-aliasing -fwrapv)
+    set_source_files_properties(${MED_GAME_GEN} PROPERTIES COMPILE_OPTIONS "-O1")
+
+    add_executable(medievil-gametest src/Decomp/GameTest.cpp)
+    target_link_libraries(medievil-gametest PRIVATE medievil-game)
+endif()

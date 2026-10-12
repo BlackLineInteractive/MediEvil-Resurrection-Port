@@ -14,8 +14,11 @@ public class CreateFunctions extends GhidraScript {
         for (String s : Files.readAllLines(Paths.get(getScriptArgs()[0]))) {
             s = s.trim();
             if (s.isEmpty()) continue;
-            Address a = toAddr(Long.parseLong(s, 16));
+            // "?addr": only if no function already contains it (could be a switch case target)
+            boolean optional = s.startsWith("?");
+            Address a = toAddr(Long.parseLong(optional ? s.substring(1) : s, 16));
             if (getFunctionAt(a) != null) { existed++; continue; }
+            if (optional && getFunctionContaining(a) != null) { existed++; continue; }
             if (getInstructionAt(a) == null) {
                 clearListing(a);   // a stray data definition would block disassembly
                 disassemble(a);

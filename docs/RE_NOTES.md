@@ -361,3 +361,38 @@ Located, not yet ported (the current `Core/Player` is a placeholder controller, 
 - Not found yet: the mapping from animator states to dan.atbl (state, variant). `FUN_0001149c` is an item
   counter, not anim code.
 - Firefly: sfx_fairy_glow_abe.psm / sfx_fairy_trail_abe.psm, used in `FUN_00140374` / `FUN_00151048`.
+
+## 19. Ghidra -> C++ transpiler (whole main.prx)
+
+Instead of porting functions by hand, every function Ghidra decompiles is translated to C++ automatically.
+
+1. `tools/ghidra_scripts/ExportForTranspile.java` (headless, ~10 min) writes `decomp/transpile_in/<addr>.c` with
+   metadata: `//@G` globals with the type Ghidra used in that function, `//@L` stack locals with their offset
+   from the entry sp, plus `functions.tsv`.
+   `analyzeHeadless ghidra MediEvil -process main.prx -noanalysis -readOnly -scriptPath tools/ghidra_scripts -postScript ExportForTranspile.java decomp/transpile_in`
+2. `tools/transpile_build.sh` runs `tools/transpile.py` -> `decomp/cpp/` (128 chunks, `decls.h`, `thunks.cpp`,
+   `imports.cpp`) and syntax-checks every chunk; `tools/transpile_fix.py` maps compiler errors to functions and
+   adds them to `decomp/cpp/stubbed.txt` (they become `Unimplemented()` calls). Repeat until 0 errors.
+3. CMake target `medievil-game` (only when `decomp/cpp` exists; it is derived from the binary and gitignored).
+
+Runtime model (`src/Decomp/Runtime.h`):
+- main.prx is loaded at guest address 0 (= Ghidra image base, PRX relocations become no-ops), 64 MB guest space,
+  heap from 0x800000, stack below 0x3E00000, inlined string literals interned in the last MB (`Memory.h`).
+- `GP<T>` = 32-bit guest pointer (pointer arithmetic scaled by guest sizes; `*GP<VB<N>>` is a `VRef` that reads
+  as a value and decays to its address like a C array). `U4` = `undefined4`, keeps bits on float<->int moves.
+- Stack locals (`local_XX`, `auStack_XX`) live in a guest `Frame` so their addresses can be passed on.
+- `x._A_B_` -> `Fld<A,B>(x)`. Calls go through `Caller<&f_addr>` (adapts arg count/types); calls by address
+  (vtables, function pointers) go through `ICall` -> per-function thunks fed an EABI register image
+  (ints a0-a3/t0-t3, floats f12-f19).
+- VFPU: Ghidra keeps `vpfxs/vpfxt/vpfxd` as calls in program order, so the runtime keeps prefix state and the next
+  VFPU op consumes it. Lane encoding (ghidra-allegrex `Vpfxst`): bit4 neg, bit3 abs, bit2 constant, bits0-1
+  swizzle; constant lanes are 0, 1, 2, 1/2 (Ghidra's encoding cannot tell them from 3, 1/3, 1/4, 1/6). d lanes:
+  bit2 write mask (not honoured), 2 = saturate [0,1], 4 = [-1,1]. `vsin/vcos` take quarter turns (callers
+  pre-multiply by `vcst 5` = 2/pi). Matrices are 64-byte column-major values.
+- Imports (`/* lib NID 0x... */` 8-byte stubs) are weak `U4 f_addr(U4 a0..a7)` stubs; define the same symbol in a
+  hand-written file to implement one.
+
+First run: 15538 functions, 116 auto-stubbed (0.75%), 195 imports.
+Pad button table 0x33f380 (8 actions x 2 layouts): 0 Triangle, 1 Square/Cross, 2 Cross/Square, 3 Circle, 4 R,
+5 L, 6 Select, 7 Start. Danbrain posts messages to components instead of moving Dan itself (type 6 = move to
+point at speed, type 1 = stop; `FUN_001c5c98`), see `FUN_0008a854`.
