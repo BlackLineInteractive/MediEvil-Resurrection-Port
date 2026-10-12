@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <map>
 
 namespace med {
 namespace {
@@ -73,20 +72,27 @@ uint32_t ReadColor(const uint8_t* p, int col) {
     return r | g << 8 | b << 16 | a << 24;
 }
 
-struct Fragment {
-    std::vector<Vertex> verts;
-    std::vector<uint16_t> strips;
-};
+// TXI1: one {u8 texture, u8 0xFF} per fragment reference, terminated by FF FF.
+std::vector<int> ParseTxi(const Chunk& c) {
+    std::vector<int> t;
+    for (uint32_t o = 0; o + 2 <= c.size; o += 2) {
+        if (c.data[o] == 0xFF && c.data[o + 1] == 0xFF) break;
+        t.push_back(c.data[o]);
+    }
+    return t;
+}
+
+} // namespace
 
 bool ParseFragment(const Chunk& frg, Fragment& out) {
     uint32_t vtype = 0, stride = 0;
     float txf[4] = {1, 1, 0, 0};
-    const Chunk* fvt = nullptr;
-    Chunk fvtCopy;
+    Chunk fvt;
+    bool haveFvt = false;
     ForEachChunk(frg, [&](const Chunk& c) {
         if (c.Is("VFT0") || c.Is("VFT1")) { vtype = c.At<uint32_t>(0); stride = c.At<uint32_t>(4); }
         else if (c.Is("TXF0")) for (int i = 0; i < 4; ++i) txf[i] = c.At<float>(i * 4);
-        else if (c.Is("FVT1")) { fvtCopy = c; fvt = &fvtCopy; }
+        else if (c.Is("FVT1")) { fvt = c; haveFvt = true; }
         else if (c.Is("FSU0"))
             for (uint32_t o = 0; o + 2 <= c.size; o += 2) {
                 uint16_t n = c.At<uint16_t>(o);
@@ -94,22 +100,23 @@ bool ParseFragment(const Chunk& frg, Fragment& out) {
                 out.strips.push_back(n);
             }
     });
-    if (!fvt || !vtype) return false;
+    if (!haveFvt || !vtype) return false;
     VertexLayout L(vtype);
     if (!stride) stride = L.stride;
     size_t count = 0;
     for (auto n : out.strips) count += n;
     // FVT1 starts with 'PAD' filler up to 16-byte alignment; the vertices are the tail.
-    if (count * stride > fvt->size) return false;
-    const uint8_t* base = fvt->data + (fvt->size - count * stride);
+    if (count * stride > fvt.size) return false;
+    const uint8_t* base = fvt.data + (fvt.size - count * stride);
 
     out.verts.resize(count);
     for (size_t i = 0; i < count; ++i) {
         const uint8_t* v = base + i * stride;
         Vertex& o = out.verts[i];
         if (L.texOff >= 0) {
+            int e = L.tex == 3 ? 4 : L.tex;
             float u = ReadComp(v + L.texOff, L.tex, false, 128.f, 32768.f);
-            float w = ReadComp(v + L.texOff + (L.tex == 3 ? 4 : L.tex), L.tex, false, 128.f, 32768.f);
+            float w = ReadComp(v + L.texOff + e, L.tex, false, 128.f, 32768.f);
             o.uv = {u * txf[0] + txf[2], w * txf[1] + txf[3]};
         }
         if (L.colOff >= 0) o.color = ReadColor(v + L.colOff, L.col);
@@ -129,11 +136,12 @@ bool ParseFragment(const Chunk& frg, Fragment& out) {
     return true;
 }
 
-void Append(MeshData& m, const Fragment& f, int texture) {
+void AppendFragment(MeshData& m, const Fragment& f, int texture, uint32_t material) {
     uint32_t base = uint32_t(m.vertices.size());
     Batch b;
     b.firstIndex = uint32_t(m.indices.size());
     b.texture = texture;
+    b.material = material;
     m.vertices.insert(m.vertices.end(), f.verts.begin(), f.verts.end());
     uint32_t s = 0;
     for (uint16_t n : f.strips) {
@@ -150,106 +158,88 @@ void Append(MeshData& m, const Fragment& f, int texture) {
     }
     b.indexCount = uint32_t(m.indices.size()) - b.firstIndex;
     if (b.indexCount) {
-        // merge with the previous batch when the texture matches and it is contiguous
-        if (!m.batches.empty() && m.batches.back().texture == texture &&
-            m.batches.back().firstIndex + m.batches.back().indexCount == b.firstIndex)
-            m.batches.back().indexCount += b.indexCount;
+        Batch& prev = m.batches.empty() ? b : m.batches.back();
+        if (!m.batches.empty() && prev.texture == texture && prev.material == material &&
+            prev.firstIndex + prev.indexCount == b.firstIndex)
+            prev.indexCount += b.indexCount;
         else
             m.batches.push_back(b);
     }
     ++m.fragments;
 }
 
-void ParseTextureList(const Chunk& tex0, std::vector<std::string>& out) {
-    // entries: u8 3, "T:name.psm", NUL
+void ParseTextureList(const Chunk& tex0, std::vector<TextureRef>& out) {
+    // entries: u8 kind (0x03 PSM, 0x23 FLIP), "T:name", NUL
     size_t i = 0;
     while (i < tex0.size) {
         if (tex0.data[i] == 0) { ++i; continue; }
-        if (tex0.data[i] < 32) ++i;
+        TextureRef t;
+        t.kind = tex0.data[i++];
         size_t start = i;
         while (i < tex0.size && tex0.data[i]) ++i;
-        std::string s(reinterpret_cast<const char*>(tex0.data + start), i - start);
-        if (s.size() > 2 && s[1] == ':') s = s.substr(2);
-        if (!s.empty()) out.push_back(s);
+        t.name.assign(reinterpret_cast<const char*>(tex0.data + start), i - start);
+        if (t.name.size() > 2 && t.name[1] == ':') t.name = t.name.substr(2);
+        if (!t.name.empty()) out.push_back(t);
     }
 }
 
-// TXI1: one {u8 texture, u8 0xFF} per fragment reference, terminated by FF FF.
-std::vector<int> ParseTxi(const Chunk& c) {
-    std::vector<int> t;
-    for (uint32_t o = 0; o + 2 <= c.size; o += 2) {
-        if (c.data[o] == 0xFF && c.data[o + 1] == 0xFF) break;
-        t.push_back(c.data[o]);
-    }
-    return t;
-}
-
-void WalkOctree(const Chunk& c, std::map<int, int>& fragTex) {
-    ForEachChunk(c, [&](const Chunk& ch) {
-        if (ch.Is("FMH0")) {
-            std::vector<uint16_t> frr;
-            std::vector<int> txi;
-            ForEachChunk(ch, [&](const Chunk& l) {
-                if (l.Is("FRR0"))
-                    for (uint32_t o = 0; o + 2 <= l.size; o += 2) {
-                        uint16_t v = l.At<uint16_t>(o);
-                        if (v == 0xFFFF) break;
-                        frr.push_back(v);
-                    }
-                else if (l.Is("TXI1")) txi = ParseTxi(l);
-            });
-            for (size_t i = 0; i < frr.size(); ++i)
-                if (!(frr[i] & 0x8000))   // high bit: not a pool fragment (meaning still unknown)
-                    fragTex.emplace(frr[i], i < txi.size() ? txi[i] : -1);
-        } else if (ch.container) {
-            WalkOctree(ch, fragTex);
+void AppendMeshHolder(MeshData& m, const Chunk& fmh0, const std::vector<Fragment>& pool,
+                      std::vector<uint8_t>* poolUsed) {
+    uint32_t material = 0;
+    std::vector<uint16_t> refs;
+    std::vector<int> txi;
+    std::vector<Fragment> local;
+    ForEachChunk(fmh0, [&](const Chunk& c) {
+        if (c.Is("MFL1")) material = c.At<uint32_t>(0);
+        else if (c.Is("FRR0"))
+            for (uint32_t o = 0; o + 2 <= c.size; o += 2) {
+                uint16_t v = c.At<uint16_t>(o);
+                if (v == 0xFFFF) break;
+                refs.push_back(v);
+            }
+        else if (c.Is("TXI1")) txi = ParseTxi(c);
+        else if (c.Is("FRG0")) { local.emplace_back(); ParseFragment(c, local.back()); }
+    });
+    // MOD0 holders have no FRR0: their local fragments are used in order.
+    if (refs.empty())
+        for (size_t i = 0; i < local.size(); ++i) refs.push_back(uint16_t(0x8000 | i));
+    for (size_t i = 0; i < refs.size(); ++i) {
+        const Fragment* f = nullptr;
+        if (refs[i] & 0x8000) {
+            size_t n = refs[i] & 0x7FFF;
+            if (n < local.size()) f = &local[n];
+        } else if (refs[i] < pool.size()) {
+            if (poolUsed && (*poolUsed)[refs[i]]) continue;
+            if (poolUsed) (*poolUsed)[refs[i]] = 1;
+            f = &pool[refs[i]];
         }
-    });
+        if (f) AppendFragment(m, *f, i < txi.size() ? txi[i] : -1, material);
+    }
 }
 
-} // namespace
-
-bool LoadSubZone(const std::vector<uint8_t>& data, MeshData& out) {
-    std::vector<Fragment> pool;
-    std::map<int, int> fragTex;
-    ForEachChunk(data.data(), data.size(), [&](const Chunk& top) {
-        if (top.Is("TEX0")) ParseTextureList(top, out.textures);
-        if (!top.Is("SBZ0")) return;
-        ForEachChunk(top, [&](const Chunk& c) {
-            if (c.Is("SZR0"))
-                ForEachChunk(c, [&](const Chunk& f) {
-                    if (!f.Is("FRG0")) return;
-                    pool.emplace_back();
-                    ParseFragment(f, pool.back());
-                });
-            else if (c.Is("OCT0"))
-                WalkOctree(c, fragTex);
-        });
+void AppendOctree(MeshData& m, const Chunk& c, const std::vector<Fragment>& pool,
+                  std::vector<uint8_t>* poolUsed) {
+    ForEachChunk(c, [&](const Chunk& ch) {
+        if (ch.Is("FMH0")) AppendMeshHolder(m, ch, pool, poolUsed);
+        else if (ch.container) AppendOctree(m, ch, pool, poolUsed);
     });
-    if (pool.empty()) { out.error = "no SZR0 fragments"; return false; }
-    for (size_t i = 0; i < pool.size(); ++i) {
-        auto it = fragTex.find(int(i));
-        Append(out, pool[i], it == fragTex.end() ? -1 : it->second);
-    }
-    return true;
 }
 
 bool LoadModel(const std::vector<uint8_t>& data, MeshData& out) {
     ForEachChunk(data.data(), data.size(), [&](const Chunk& top) {
         if (top.Is("TEX0")) ParseTextureList(top, out.textures);
-        if (!top.Is("MOD0")) return;
-        ForEachChunk(top, [&](const Chunk& fmh) {
-            if (!fmh.Is("FMH0")) return;
-            std::vector<Fragment> frags;
-            std::vector<int> txi;
-            ForEachChunk(fmh, [&](const Chunk& c) {
-                if (c.Is("FRG0")) { frags.emplace_back(); ParseFragment(c, frags.back()); }
-                else if (c.Is("TXI1")) txi = ParseTxi(c);
-            });
-            for (size_t i = 0; i < frags.size(); ++i) Append(out, frags[i], i < txi.size() ? txi[i] : -1);
-        });
+        else if (top.Is("MOD0")) AppendOctree(out, top, {});
     });
     if (!out.fragments) { out.error = "no MOD0 fragments"; return false; }
+    return true;
+}
+
+bool LoadInstanceMesh(const std::vector<uint8_t>& data, MeshData& out) {
+    ForEachChunk(data.data(), data.size(), [&](const Chunk& top) {
+        if (top.Is("TEX0")) ParseTextureList(top, out.textures);
+        else if (top.Is("OCT0")) AppendOctree(out, top, {});
+    });
+    if (!out.fragments) { out.error = "no INST fragments"; return false; }
     return true;
 }
 

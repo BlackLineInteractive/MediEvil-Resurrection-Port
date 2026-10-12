@@ -15,7 +15,35 @@ static std::vector<uint8_t> Unswizzle(const uint8_t* src, int widthBytes, int he
     return out;
 }
 
+static void ClassifyAlpha(Image& img) {
+    for (size_t i = 3; i < img.rgba.size(); i += 4)
+        if (img.rgba[i] > 8 && img.rgba[i] < 247) { img.translucent = true; return; }
+}
+
+static bool DecodePSMRaw(const uint8_t* d, size_t size, Image& out);
+
 bool DecodePSM(const uint8_t* d, size_t size, Image& out) {
+    if (!DecodePSMRaw(d, size, out)) return false;
+    ClassifyAlpha(out);
+    return true;
+}
+
+bool DecodeFLIP(const uint8_t* d, size_t size, Flipbook& out) {
+    if (size < 16 || memcmp(d, "FLIP", 4) != 0) return false;
+    uint32_t count, fps, stride;
+    memcpy(&count, d + 4, 4);
+    memcpy(&fps, d + 8, 4);
+    memcpy(&stride, d + 12, 4);
+    out.fps = fps ? float(fps) : 15.f;
+    for (uint32_t i = 0; i < count && 16 + size_t(i + 1) * stride <= size; ++i) {
+        Image img;
+        if (!DecodePSM(d + 16 + size_t(i) * stride, stride, img)) break;
+        out.frames.push_back(std::move(img));
+    }
+    return !out.frames.empty();
+}
+
+static bool DecodePSMRaw(const uint8_t* d, size_t size, Image& out) {
     if (size < 16 || memcmp(d, "PSM0", 4) != 0) return false;
     int fmt = d[6], flags = d[7];
     int w = d[8] | d[9] << 8, h = d[10] | d[11] << 8;

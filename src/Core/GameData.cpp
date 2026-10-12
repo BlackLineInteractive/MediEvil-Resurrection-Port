@@ -11,9 +11,18 @@ static constexpr uint32_t kSector = 2048;
 static uint32_t rd32(const uint8_t* p) { return p[0] | p[1] << 8 | p[2] << 16 | uint32_t(p[3]) << 24; }
 static uint16_t rd16(const uint8_t* p) { return uint16_t(p[0] | p[1] << 8); }
 
-uint32_t NameHash(const std::string& name) {
-    uint32_t h = 0;
+uint32_t NameHash(const std::string& name, uint32_t seed) {
+    uint32_t h = seed;
     for (char c : name) h = h * 129u + uint32_t(int32_t(int8_t(c)));
+    return h;
+}
+
+uint32_t NameHashStripSuffix(uint32_t full, const std::string& suffix) {
+    // 129^-1 mod 2^32 by Newton iteration
+    uint32_t inv = 129;
+    for (int i = 0; i < 5; ++i) inv *= 2u - 129u * inv;
+    uint32_t h = full;
+    for (auto it = suffix.rbegin(); it != suffix.rend(); ++it) h = (h - uint32_t(int32_t(int8_t(*it)))) * inv;
     return h;
 }
 

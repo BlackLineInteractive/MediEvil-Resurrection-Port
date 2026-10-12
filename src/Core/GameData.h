@@ -11,7 +11,10 @@ namespace med {
 
 // Engine name hash (main.prx FUN_001be1e4): h = h*129 + (signed char)c over the file name
 // with extension, no directory, starting at 0.
-uint32_t NameHash(const std::string& name);
+uint32_t NameHash(const std::string& name, uint32_t seed = 0);
+// Inverse of continuing a hash with `suffix`: the hash the prefix must have so that
+// NameHash(suffix, result) == full. Works because 129 is odd (invertible mod 2^32).
+uint32_t NameHashStripSuffix(uint32_t full, const std::string& suffix);
 
 // FourCC as stored in the TOC ("PSM\0", "SUBZ", ...).
 inline uint32_t FourCC(const char* s) {

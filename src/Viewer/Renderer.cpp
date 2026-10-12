@@ -23,15 +23,15 @@ void main() {
 // PSP vertex colours use 0x80 as 1.0 (baked lighting), hence the x2.
 static const char* kFS = R"(#version 410 core
 in vec2 vUV; in vec4 vCol; in vec3 vNrm;
-uniform sampler2D uTex; uniform bool uTextured, uVColor;
+uniform sampler2D uTex; uniform bool uTextured, uVColor; uniform float uAlphaRef;
 out vec4 frag;
 void main() {
     vec4 t = uTextured ? texture(uTex, vUV) : vec4(1.0);
-    vec4 c = uVColor ? vec4(min(vCol.rgb * 2.0, vec3(2.0)), 1.0) : vec4(1.0);
+    vec4 c = uVColor ? vec4(min(vCol.rgb * 2.0, vec3(2.0)), min(vCol.a * 2.0, 1.0)) : vec4(1.0);
     if (!uVColor) c.rgb *= 0.55 + 0.45 * abs(normalize(vNrm).y);
     vec4 o = t * c;
-    if (o.a < 0.25) discard;
-    frag = vec4(o.rgb, 1.0);
+    if (o.a < uAlphaRef) discard;
+    frag = o;
 })";
 
 static GLuint Compile(GLenum type, const char* src) {
@@ -46,6 +46,19 @@ static GLuint Compile(GLenum type, const char* src) {
         fprintf(stderr, "shader: %s\n", log);
     }
     return s;
+}
+
+static GLuint UploadImage(const Image& img) {
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.rgba.data());
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    return tex;
 }
 
 GpuMesh::~GpuMesh() {
@@ -67,6 +80,7 @@ bool Renderer::Init() {
     uTextured_ = glGetUniformLocation(prog_, "uTextured");
     uVColor_ = glGetUniformLocation(prog_, "uVColor");
     uTex_ = glGetUniformLocation(prog_, "uTex");
+    uAlphaRef_ = glGetUniformLocation(prog_, "uAlphaRef");
     uint32_t px = 0xFFFFFFFF;
     glGenTextures(1, &white_);
     glBindTexture(GL_TEXTURE_2D, white_);
@@ -74,32 +88,41 @@ bool Renderer::Init() {
     return true;
 }
 
-GLuint Renderer::Texture(const std::string& name, const GameData& gd, int preferGroup) {
-    auto it = texCache_.find(name);
-    if (it != texCache_.end()) return it->second;
-    GLuint tex = 0;
-    if (const Asset* a = gd.Find(name, preferGroup)) {
+const GpuTexture* Renderer::Texture(const TextureRef& ref, const GameData& gd, int preferGroup) {
+    auto it = texCache_.find(ref.name);
+    if (it != texCache_.end()) return it->second.get();
+    std::unique_ptr<GpuTexture> t;
+    if (const Asset* a = gd.Find(ref.name, preferGroup)) {
         auto bytes = gd.Read(*a);
-        Image img;
-        if (DecodePSM(bytes.data(), bytes.size(), img)) {
-            glGenTextures(1, &tex);
-            glBindTexture(GL_TEXTURE_2D, tex);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.rgba.data());
-            glGenerateMipmap(GL_TEXTURE_2D);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        if (a->type == FourCC("FLIP")) {
+            Flipbook fb;
+            if (DecodeFLIP(bytes.data(), bytes.size(), fb)) {
+                t = std::make_unique<GpuTexture>();
+                t->fps = fb.fps;
+                for (const auto& f : fb.frames) {
+                    t->frames.push_back(UploadImage(f));
+                    t->translucent |= f.translucent;
+                }
+            }
+        } else {
+            Image img;
+            if (DecodePSM(bytes.data(), bytes.size(), img)) {
+                t = std::make_unique<GpuTexture>();
+                t->frames.push_back(UploadImage(img));
+                t->translucent = img.translucent;
+            }
         }
     }
-    if (!tex) ++missing_;
-    texCache_[name] = tex;
-    return tex;
+    if (!t) ++missing_;
+    const GpuTexture* p = t.get();
+    texCache_[ref.name] = std::move(t);
+    return p;
 }
 
 void Renderer::ClearTextureCache() {
     for (auto& [n, t] : texCache_)
-        if (t) glDeleteTextures(1, &t);
+        if (t)
+            for (GLuint f : t->frames) glDeleteTextures(1, &f);
     texCache_.clear();
     missing_ = 0;
 }
@@ -124,13 +147,33 @@ std::unique_ptr<GpuMesh> Renderer::Upload(const MeshData& m, const GameData& gd,
     attr(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(Vertex, color));
     glBindVertexArray(0);
     g->batches = m.batches;
-    for (const auto& n : m.textures) g->textures.push_back(Texture(n, gd, preferGroup));
+    for (const auto& t : m.textures) g->textures.push_back(Texture(t, gd, preferGroup));
     g->bmin = m.bmin;
     g->bmax = m.bmax;
     return g;
 }
 
-void Renderer::Draw(const std::vector<std::unique_ptr<GpuMesh>>& meshes, const glm::mat4& viewProj, bool textured,
+void Renderer::DrawPass(const std::vector<DrawItem>& items, double time, bool textured, bool translucentPass) {
+    for (const auto& it : items) {
+        const GpuMesh* m = it.mesh;
+        glUniformMatrix4fv(uModel_, 1, GL_FALSE, glm::value_ptr(it.model));
+        glBindVertexArray(m->vao);
+        for (const auto& b : m->batches) {
+            const GpuTexture* t = b.texture >= 0 && b.texture < int(m->textures.size()) ? m->textures[b.texture] : nullptr;
+            // Translucency comes from the texture alpha for now: the GE blend state the game sets per
+            // material (MFL1 -> holder flags) is not mapped yet.
+            bool translucent = textured && t && t->translucent;
+            if (translucent != translucentPass) continue;
+            GLuint tex = textured && t ? t->At(time) : 0;
+            glUniform1i(uTextured_, tex != 0);
+            glBindTexture(GL_TEXTURE_2D, tex ? tex : white_);
+            glDrawElements(GL_TRIANGLES, GLsizei(b.indexCount), GL_UNSIGNED_INT,
+                           reinterpret_cast<void*>(size_t(b.firstIndex) * 4));
+        }
+    }
+}
+
+void Renderer::Draw(const std::vector<DrawItem>& items, const glm::mat4& viewProj, double time, bool textured,
                     bool vertexColor, bool wireframe) {
     glUseProgram(prog_);
     glUniformMatrix4fv(uViewProj_, 1, GL_FALSE, glm::value_ptr(viewProj));
@@ -140,17 +183,20 @@ void Renderer::Draw(const std::vector<std::unique_ptr<GpuMesh>>& meshes, const g
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
-    for (const auto& m : meshes) {
-        glUniformMatrix4fv(uModel_, 1, GL_FALSE, glm::value_ptr(m->model));
-        glBindVertexArray(m->vao);
-        for (const auto& b : m->batches) {
-            GLuint t = b.texture >= 0 && b.texture < int(m->textures.size()) ? m->textures[b.texture] : 0;
-            glUniform1i(uTextured_, textured && t);
-            glBindTexture(GL_TEXTURE_2D, t ? t : white_);
-            glDrawElements(GL_TRIANGLES, GLsizei(b.indexCount), GL_UNSIGNED_INT,
-                           reinterpret_cast<void*>(size_t(b.firstIndex) * 4));
-        }
-    }
+
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+    glUniform1f(uAlphaRef_, 0.25f);
+    DrawPass(items, time, textured, false);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+    glUniform1f(uAlphaRef_, 0.01f);
+    DrawPass(items, time, textured, true);
+
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glBindVertexArray(0);
 }

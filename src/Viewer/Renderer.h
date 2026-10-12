@@ -12,31 +12,47 @@
 
 namespace med {
 
+struct GpuTexture {
+    std::vector<GLuint> frames;    // one for PSM, several for a FLIP flipbook
+    float fps = 0;
+    bool translucent = false;
+    GLuint At(double time) const {
+        if (frames.empty()) return 0;
+        if (frames.size() == 1 || fps <= 0) return frames[0];
+        return frames[size_t(time * fps) % frames.size()];
+    }
+};
+
 struct GpuMesh {
     GLuint vao = 0, vbo = 0, ibo = 0;
     std::vector<Batch> batches;
-    std::vector<GLuint> textures;   // per MeshData::textures entry, 0 = missing
-    glm::mat4 model{1.0f};
+    std::vector<const GpuTexture*> textures;   // per MeshData::textures entry, nullptr = missing
     glm::vec3 bmin{0}, bmax{0};
     ~GpuMesh();
+};
+
+// One placed copy of a mesh (static level geometry uses identity).
+struct DrawItem {
+    const GpuMesh* mesh = nullptr;
+    glm::mat4 model{1.0f};
 };
 
 class Renderer {
 public:
     bool Init();
     std::unique_ptr<GpuMesh> Upload(const MeshData& m, const GameData& gd, int preferGroup);
-    void Draw(const std::vector<std::unique_ptr<GpuMesh>>& meshes, const glm::mat4& viewProj, bool textured,
+    void Draw(const std::vector<DrawItem>& items, const glm::mat4& viewProj, double time, bool textured,
               bool vertexColor, bool wireframe);
     void ClearTextureCache();
-    size_t TextureCount() const { return texCache_.size(); }
     int MissingTextures() const { return missing_; }
 
 private:
-    GLuint Texture(const std::string& name, const GameData& gd, int preferGroup);
+    const GpuTexture* Texture(const TextureRef& ref, const GameData& gd, int preferGroup);
+    void DrawPass(const std::vector<DrawItem>& items, double time, bool textured, bool translucentPass);
     GLuint prog_ = 0;
-    GLint uViewProj_ = -1, uModel_ = -1, uTextured_ = -1, uVColor_ = -1, uTex_ = -1;
+    GLint uViewProj_ = -1, uModel_ = -1, uTextured_ = -1, uVColor_ = -1, uTex_ = -1, uAlphaRef_ = -1;
     GLuint white_ = 0;
-    std::unordered_map<std::string, GLuint> texCache_;
+    std::unordered_map<std::string, std::unique_ptr<GpuTexture>> texCache_;
     int missing_ = 0;
 };
 
