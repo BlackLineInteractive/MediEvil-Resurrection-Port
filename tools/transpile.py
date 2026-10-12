@@ -192,7 +192,9 @@ def rewrite_types(code, unknown):
 
 
 unknown_struct_names = set()
-SIGS = {}   # addr -> [(name, is_float)] of every generated function
+SIGS = {}   # addr -> [(name, is_float, type)] of every generated function
+MAXARGS = {}   # addr -> most arguments any call site passes
+USEDRET = set()   # addrs whose return value some call site uses
 
 
 def match_paren_back(s, i):
@@ -271,8 +273,14 @@ def gen_function(f, names, faddr_of, unknown, stub):
     plist = [rewrite_types(p, unknown) for p in parse_params(params)]
     variadic = any(p.strip() == '...' for p in plist)
     plist = [p for p in plist if p.strip() != '...']
+    # callers pass more than Ghidra saw: the extra registers pass through to the calls inside
+    plist += ['undefined4 in_arg%d' % k for k in range(len(plist), MAXARGS.get(f.addr, 0))]
+    track_v0 = False
     if ret_c == 'void' and re.search(r'\breturn\s+[^;\s]', f.text[he:]):
         ret_c = '::psp::RV'
+    elif ret_c == 'void' and f.addr in USEDRET:
+        ret_c = '::psp::RV'   # callers read v0: the value of the last call made
+        track_v0 = True
     sig = '%s f_%08x(%s)' % (ret_c, f.addr, ', '.join(plist))
     if f.nid or f.size <= 8 and re.search(r'NID', f.text):
         return None, None   # import stub: generated separately
@@ -399,6 +407,13 @@ def gen_function(f, names, faddr_of, unknown, stub):
     body = re.sub(r'\(\*\(\*GP<GP<uint8_t>>\((0x[0-9a-f]+u)\)\)\)\(', r'(*GP<GP<code>>(\1))(', body)
     if SIGS:
         body = fill_passthrough(body, param_info(plist), SIGS)
+    if track_v0:
+        body = re.sub(r'^(\s*)(::psp::(?:Caller<[^>]*>\{\}|CodeRef\{[^}]*\})\()', r'\1__rv = \2', body, flags=re.M)
+        body = re.sub(r'^(\s*\(\*)', r'\1', body, flags=re.M)
+        body = re.sub(r'\breturn\s*;', 'return __rv;', body)
+        body = body.replace('{', '{\n  ::psp::RV __rv;', 1)
+        k = body.rstrip().rfind('}')
+        body = body[:k] + '  return __rv;\n' + body[k:]
     frame = ''
     if stack or uses_frame[0]:
         frame = '\n  ::psp::Frame fr(%du);' % (-minoff + 16)
@@ -524,10 +539,31 @@ def main():
         stubbed = {int(l.split()[0], 16) for l in open(stub_list) if l.strip()}
     funcs, names = load(args.indir)
     unknown = set()
+    call_re = re.compile(r'(^|[^\w.>])(' + ID + r')\s*\(')
+    for a, f in funcs.items():
+        h = find_header(f.text, f.name)
+        body = f.text[h[3]:] if h else ''
+        for m in call_re.finditer(body):
+            nm = m.group(2)
+            if nm not in names or nm in KEYWORDS:
+                continue
+            ca = names[nm]
+            k, depth = m.end(), 1
+            while k < len(body) and depth:
+                depth += {'(': 1, ')': -1}.get(body[k], 0)
+                k += 1
+            inner = body[m.end():k - 1].strip()
+            n = 0 if not inner else len(split_args(inner))
+            MAXARGS[ca] = max(MAXARGS.get(ca, 0), n)
+            line_start = body.rfind('\n', 0, m.start(2)) + 1
+            if body[line_start:m.start(2)].strip() not in ('',):
+                USEDRET.add(ca)
     for a, f in funcs.items():
         h = find_header(f.text, f.name) if not f.nid else None
         if h:
-            SIGS[a] = param_info([rewrite_types(p, set()) for p in parse_params(h[1]) if p.strip() != '...'])
+            pl = [rewrite_types(p, set()) for p in parse_params(h[1]) if p.strip() != '...']
+            pl += ['undefined4 in_arg%d' % k for k in range(len(pl), MAXARGS.get(a, 0))]
+            SIGS[a] = param_info(pl)
     decls, imports, gen, thunks = [], [], {}, []
     for a, f in sorted(funcs.items()):
         if f.nid:

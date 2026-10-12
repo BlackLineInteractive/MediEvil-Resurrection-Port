@@ -55,7 +55,28 @@ std::string HostPath(const std::string& p) {
     return g_platform.discRoot + "/" + rest;   // disc0:, umd0:, umd1:, host0:, relative
 }
 
+// Files on the disc get a made-up sector number in their stat (SceIoStat.st_private[0]); the game then opens
+// them raw as disc0:/sce_lbn0x<lbn>_size0x<size>, which maps back to the file.
+std::map<uint32_t, std::string> g_lbnFiles;
+uint32_t g_nextLbn = 0x1000;
+uint32_t LbnFor(const std::string& host) {
+    for (auto& [lbn, p] : g_lbnFiles) if (p == host) return lbn;
+    g_lbnFiles[g_nextLbn] = host;
+    return (g_nextLbn += 0x100000) - 0x100000;
+}
+
 int Open(const std::string& path, uint32_t flags) {
+    unsigned lbn = 0, size = 0;
+    if (std::sscanf(path.c_str(), "disc0:/sce_lbn0x%x_size0x%x", &lbn, &size) == 2 ||
+        std::sscanf(path.c_str(), "umd0:/sce_lbn0x%x_size0x%x", &lbn, &size) == 2) {
+        auto it = g_lbnFiles.find(lbn);
+        if (it == g_lbnFiles.end()) { TRACE("open %s: unknown sector\n", path.c_str()); return int(0x80010002); }
+        FILE* f = std::fopen(it->second.c_str(), "rb");
+        TRACE("open %s -> %s\n", path.c_str(), it->second.c_str());
+        if (!f) return int(0x80010002);
+        g_files[g_nextFd] = f;
+        return g_nextFd++;
+    }
     const char* mode = (flags & 3) == 1 ? "rb" : (flags & 0x400) ? "w+b" : (flags & 0x200) ? "a+b" : "r+b";
     FILE* f = std::fopen(HostPath(path).c_str(), mode);
     TRACE("open %s -> %s\n", path.c_str(), f ? "ok" : "FAILED");
@@ -107,7 +128,10 @@ PSPCALL(sceIoRead) {
     UNUSED;
     FILE* f = Fd(a0);
     if (!f) return uint32_t(-1);
-    return uint32_t(std::fread(g_mem + uint32_t(a1), 1, uint32_t(a2), f));
+    long pos = std::ftell(f);
+    uint32_t n = uint32_t(std::fread(g_mem + uint32_t(a1), 1, uint32_t(a2), f));
+    TRACE("read fd %u @%ld %u -> %08x = %u\n", uint32_t(a0), pos, uint32_t(a2), uint32_t(a1), n);
+    return n;
 }
 PSPCALL(sceIoReadAsync) { UNUSED; g_asyncResult[int(uint32_t(a0))] = int32_t(PSP_sceIoRead(a0, a1, a2, 0, 0, 0, 0, 0)); return 0; }
 PSPCALL(sceIoWrite) {
@@ -123,6 +147,7 @@ PSPCALL(sceIoLseek) {
     if (!f) return uint64_t(-1);
     // EABI: fd in a0, the 64-bit offset in the next register (positional), whence after it
     std::fseek(f, long(int32_t(uint32_t(a1))), int(uint32_t(a2)));
+    TRACE("lseek fd %u %d whence %u -> %ld\n", uint32_t(a0), int32_t(uint32_t(a1)), uint32_t(a2), std::ftell(f));
     return uint64_t(std::ftell(f));
 }
 PSPCALL(sceIoLseekAsync) { UNUSED; g_asyncResult[int(uint32_t(a0))] = int64_t(PSP_sceIoLseek(a0, a1, a2, 0, 0, 0, 0, 0)); return 0; }
@@ -144,6 +169,8 @@ PSPCALL(sceIoGetstat) {
     std::memset(g_mem + uint32_t(a1), 0, 0x58);
     *GP<uint32_t>(uint32_t(a1)) = 0x21ff;   // FIO_S_IFREG | rwx
     std::memcpy(g_mem + uint32_t(a1) + 8, &size, 8);
+    *GP<uint32_t>(uint32_t(a1) + 0x40) = LbnFor(HostPath(GuestString(a0)));   // st_private[0]: sector
+    TRACE("getstat %s size %lld\n", GuestString(a0).c_str(), (long long)size);
     return 0;
 }
 PSPCALL(sceIoChangeAsyncPriority) { UNUSED; return 0; }

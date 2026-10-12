@@ -1,5 +1,7 @@
 // Smoke test for the translated main.prx: boots guest memory and runs a few of Dan's functions.
 #include "Decomp/Memory.h"
+#include "Decomp/Platform.h"
+#include <cstdlib>
 #include "decls.h"
 
 #include <cstdio>
@@ -9,12 +11,13 @@ using namespace psp;
 
 int main(int argc, char** argv) {
     const char* prx = argc > 1 ? argv[1] : "extracted/PSP_GAME/USRDIR/prx/main.prx";
+    g_platform.trace = std::getenv("PSP_TRACE") != nullptr;
     if (!Boot(prx)) { std::fprintf(stderr, "cannot load %s\n", prx); return 1; }
     std::printf("static constructors run: %d\n", RunStaticCtors());
 
     if (argc > 2 && std::string(argv[2]) == "main") {
         std::printf("running main (0x20cf8)\n");
-        game::f_00020cf8();
+        ::psp::Caller<&game::f_00020cf8>{}();
         std::printf("main returned\n");
         return 0;
     }
@@ -25,7 +28,7 @@ int main(int argc, char** argv) {
     for (float s : {0.0f, 0.3f, 0.5f, 0.84f, 0.9f, 1.0f})
         std::printf("  %.2f -> %.4f\n", s, game::f_0008ce24(s, 1.0f, int(brain)));
 
-    game::f_0020f284();   // engine init (FUN_001e77dc) step: acos table at 0x3de210 used by the stick code
+    ::psp::Caller<&game::f_0020f284>{}();   // engine init (FUN_001e77dc) step: acos table at 0x3de210 used by the stick code
     std::printf("acos table [0] %.4f [4096] %.4f [8192] %.4f [16384] %.4f; acosf(0.5) = %.4f\n", float(GP<float>(0x3de210)[0]),
                 float(GP<float>(0x3de210)[4096]), float(GP<float>(0x3de210)[8192]), float(GP<float>(0x3de210)[16384]),
                 BitCast<float>(uint32_t(game::f_00240424(U4(0.5f)))));
