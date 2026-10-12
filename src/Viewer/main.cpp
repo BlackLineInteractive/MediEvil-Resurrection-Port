@@ -401,8 +401,10 @@ int main(int argc, char** argv) {
     app.verbose = !shot.empty();
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
-#if defined(MED_GLES)
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+#if defined(MED_PLATFORM_VITA)
+    // VitaGL initialization
+#elif defined(MED_GLES) && (!defined(__APPLE__) || TARGET_OS_IPHONE)
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
@@ -419,16 +421,18 @@ int main(int argc, char** argv) {
                                        1280, 800, flags);
     SDL_GLContext ctx = SDL_GL_CreateContext(win);
     SDL_GL_SetSwapInterval(1);
+#if !defined(MED_PLATFORM_VITA) && (!defined(__APPLE__) || !TARGET_OS_IPHONE) && !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
     glewExperimental = GL_TRUE;
     glewInit();
+#endif
     if (!app.ren.Init()) { fprintf(stderr, "renderer init failed\n"); return 1; }
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForOpenGL(win, ctx);
-#if defined(MED_GLES)
-    ImGui_ImplOpenGL3_Init("#version 300 es");
+#if defined(MED_PLATFORM_VITA) || (defined(MED_GLES) && (!defined(__APPLE__) || TARGET_OS_IPHONE))
+    ImGui_ImplOpenGL3_Init("#version 100");
 #else
     ImGui_ImplOpenGL3_Init("#version 410 core");
 #endif

@@ -17,7 +17,7 @@ static std::vector<uint8_t> Unswizzle(const uint8_t* src, int widthBytes, int he
 
 static void ClassifyAlpha(Image& img) {
     for (size_t i = 3; i < img.rgba.size(); i += 4)
-        if (img.rgba[i] > 8 && img.rgba[i] < 247) { img.translucent = true; return; }
+        if (img.rgba[i] < 250) { img.translucent = true; return; }
 }
 
 static bool DecodePSMRaw(const uint8_t* d, size_t size, Image& out);

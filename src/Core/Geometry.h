@@ -33,6 +33,7 @@ struct Batch {
     uint32_t firstIndex = 0, indexCount = 0;
     int texture = -1;              // index into MeshData::textures, -1 = untextured
     uint32_t material = 0;         // raw MFL1 word of the owning FMH0
+    bool hasVertexAlpha = false;   // true if any vertex in the batch has alpha < 240
 };
 
 struct TextureRef {

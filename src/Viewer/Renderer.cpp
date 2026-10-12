@@ -4,38 +4,66 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include <algorithm>
+#include <cctype>
 #include <cstdio>
+#include <string>
 
 namespace med {
 
-#if defined(MED_GLES)
-static const char* kVS = R"(#version 300 es
+#if defined(MED_PLATFORM_VITA) || (defined(MED_GLES) && (!defined(__APPLE__) || TARGET_OS_IPHONE))
+static const char* kVS = R"(#version 100
 precision highp float;
-layout(location=0) in vec3 aPos;
-layout(location=1) in vec3 aNrm;
-layout(location=2) in vec2 aUV;
-layout(location=3) in vec4 aCol;
-uniform mat4 uViewProj, uModel;
-out vec2 vUV; out vec4 vCol; out vec3 vNrm;
+precision mediump int;
+attribute vec3 aPos;
+attribute vec3 aNrm;
+attribute vec2 aUV;
+attribute vec4 aCol;
+uniform mat4 uViewProj, uView, uModel;
+uniform int uLightMode;          // 0: unlit (vertex colour x2), 1: GE lighting, world, 2: GE lighting, model
+uniform vec3 uAmbient, uLightCol[2], uLightDir[2];
+varying vec2 vUV;
+varying vec4 vCol;
+varying vec3 vNrm;
+varying float vDepth;
 void main() {
-    vUV = aUV; vCol = aCol; vNrm = mat3(uModel) * aNrm;
-    gl_Position = uViewProj * uModel * vec4(aPos, 1.0);
+    vUV = aUV;
+    vNrm = mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz) * aNrm;
+    vec4 wp = uModel * vec4(aPos, 1.0);
+    vDepth = -(uView * wp).z;
+    if (uLightMode == 0) {
+        vCol = vec4(min(aCol.rgb * 2.0, vec3(2.0)), min(aCol.a * 2.0, 1.0));
+    } else {
+        vec4 mat = uLightMode == 2 ? min(aCol * 2.0, vec4(1.0)) : aCol;
+        vec3 n = normalize(vNrm);
+        vec3 c = uAmbient * mat.rgb;
+        for (int i = 0; i < 2; ++i) c += uLightCol[i] * mat.rgb * max(dot(n, uLightDir[i]), 0.0);
+        vCol = vec4(min(c, vec3(1.0)), mat.a);
+    }
+    gl_Position = uViewProj * wp;
 })";
 
-// PSP vertex colours use 0x80 as 1.0 (baked lighting), hence the x2.
-static const char* kFS = R"(#version 300 es
+static const char* kFS = R"(#version 100
 precision mediump float;
-precision mediump sampler2D;
-in vec2 vUV; in vec4 vCol; in vec3 vNrm;
-uniform sampler2D uTex; uniform bool uTextured, uVColor; uniform float uAlphaRef;
-out vec4 frag;
+varying vec2 vUV;
+varying vec4 vCol;
+varying vec3 vNrm;
+varying float vDepth;
+uniform sampler2D uTex;
+uniform bool uTextured, uVColor;
+uniform float uAlphaRef;
+uniform bool uFog;
+uniform vec3 uFogColor;
+uniform float uFogNear, uFogFar;
 void main() {
-    vec4 t = uTextured ? texture(uTex, vUV) : vec4(1.0);
-    vec4 c = uVColor ? vec4(min(vCol.rgb * 2.0, vec3(2.0)), min(vCol.a * 2.0, 1.0)) : vec4(1.0);
+    vec4 t = uTextured ? texture2D(uTex, vUV) : vec4(1.0);
+    vec4 c = uVColor ? vCol : vec4(1.0);
     if (!uVColor) c.rgb *= 0.55 + 0.45 * abs(normalize(vNrm).y);
     vec4 o = t * c;
     if (o.a < uAlphaRef) discard;
-    frag = o;
+    if (uFog && uFogFar > uFogNear)
+        o.rgb = mix(o.rgb, uFogColor, clamp((vDepth - uFogNear) / (uFogFar - uFogNear), 0.0, 1.0));
+    gl_FragColor = o;
 })";
 #else
 static const char* kVS = R"(#version 410 core
@@ -170,7 +198,22 @@ const GpuTexture* Renderer::Texture(const TextureRef& ref, const GameData& gd, i
             }
         }
     }
-    if (!t) ++missing_;
+
+    if (t) {
+        // Tag additive textures based on name (god rays, light cones, flares, fire)
+        std::string lower = ref.name;
+        for (char& c : lower) c = (char)tolower((unsigned char)c);
+        if (lower.find("ray") != std::string::npos || lower.find("beam") != std::string::npos ||
+            lower.find("god") != std::string::npos || lower.find("shaft") != std::string::npos ||
+            lower.find("sun") != std::string::npos || lower.find("glow") != std::string::npos ||
+            lower.find("flame") != std::string::npos || lower.find("fire") != std::string::npos) {
+            t->translucent = true;
+            t->additive = true;
+        }
+    } else {
+        ++missing_;
+    }
+
     const GpuTexture* p = t.get();
     texCache_[ref.name] = std::move(t);
     return p;
@@ -234,6 +277,22 @@ void Renderer::SetLighting(const DrawItem& it, bool lighting, bool fog) {
     glUniform1f(uFogFar_, l->fogFar);
 }
 
+static bool BatchIsTranslucent(const Batch& b, const GpuTexture* t, bool isObject) {
+    if (isObject) return false;
+    if (t && t->translucent) return true;
+    if (b.hasVertexAlpha) return true;
+    uint8_t byte8 = uint8_t(b.material >> 3);
+    if (byte8 == 0x44 || byte8 == 0x48) return true;
+    return false;
+}
+
+static bool BatchIsAdditive(const Batch& b, const GpuTexture* t) {
+    if (t && t->additive) return true;
+    uint8_t byte8 = uint8_t(b.material >> 3);
+    if (byte8 == 0x44) return true;
+    return false;
+}
+
 void Renderer::DrawPass(const std::vector<DrawItem>& items, double time, bool textured, bool translucentPass,
                         bool lighting, bool fog) {
     for (const auto& it : items) {
@@ -243,10 +302,17 @@ void Renderer::DrawPass(const std::vector<DrawItem>& items, double time, bool te
         glBindVertexArray(m->vao);
         for (const auto& b : m->batches) {
             const GpuTexture* t = b.texture >= 0 && b.texture < int(m->textures.size()) ? m->textures[b.texture] : nullptr;
-            // Translucency comes from the texture alpha for now: the GE blend state the game sets per
-            // material (MFL1 -> holder flags) is not mapped yet.
-            bool translucent = textured && t && t->translucent;
+            bool translucent = BatchIsTranslucent(b, t, it.object);
             if (translucent != translucentPass) continue;
+
+            if (translucentPass) {
+                if (BatchIsAdditive(b, t)) {
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+                } else {
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                }
+            }
+
             GLuint tex = textured && t ? t->At(time) : 0;
             glUniform1i(uTextured_, tex != 0);
             glBindTexture(GL_TEXTURE_2D, tex ? tex : white_);
@@ -267,24 +333,25 @@ void Renderer::Draw(const std::vector<DrawItem>& items, const glm::mat4& view, c
     glActiveTexture(GL_TEXTURE0);
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
-    #if !defined(MED_GLES)
+#if !defined(MED_GLES) && !defined(MED_PLATFORM_VITA)
     glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
 #endif
 
+    // Pass 1: Opaque
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
     glUniform1f(uAlphaRef_, 0.25f);
     DrawPass(items, time, textured, false, lighting, fog);
 
+    // Pass 2: Translucent (god rays, windows, water, particles)
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
     glUniform1f(uAlphaRef_, 0.01f);
     DrawPass(items, time, textured, true, lighting, fog);
 
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
-    #if !defined(MED_GLES)
+#if !defined(MED_GLES) && !defined(MED_PLATFORM_VITA)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
     glBindVertexArray(0);

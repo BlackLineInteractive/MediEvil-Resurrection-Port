@@ -180,9 +180,16 @@ void AppendFragment(MeshData& m, const Fragment& f, int texture, uint32_t materi
         m.bmax = glm::max(m.bmax, v.pos);
     }
     b.indexCount = uint32_t(m.indices.size()) - b.firstIndex;
+    for (const auto& v : f.verts) {
+        if ((v.color >> 24) < 240) {
+            b.hasVertexAlpha = true;
+            break;
+        }
+    }
     if (b.indexCount) {
         Batch& prev = m.batches.empty() ? b : m.batches.back();
         if (!m.batches.empty() && prev.texture == texture && prev.material == material &&
+            prev.hasVertexAlpha == b.hasVertexAlpha &&
             prev.firstIndex + prev.indexCount == b.firstIndex)
             prev.indexCount += b.indexCount;
         else

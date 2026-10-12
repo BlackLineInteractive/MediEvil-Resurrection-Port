@@ -9,6 +9,7 @@ struct Image {
     int width = 0, height = 0;
     std::vector<uint8_t> rgba;   // width*height*4, top row first
     bool translucent = false;    // has alpha values other than ~0 / ~255
+    bool additive = false;       // additive blend effect (light rays, fire, god rays)
 };
 
 // FLIP flipbook: 'FLIP', u32 frameCount, u32 fps, u32 frameStride, then frameCount PSM0 images.

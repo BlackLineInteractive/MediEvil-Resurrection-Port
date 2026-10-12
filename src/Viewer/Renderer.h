@@ -17,6 +17,7 @@ struct GpuTexture {
     std::vector<GLuint> frames;    // one for PSM, several for a FLIP flipbook
     float fps = 0;
     bool translucent = false;
+    bool additive = false;
     GLuint At(double time) const {
         if (frames.empty()) return 0;
         if (frames.size() == 1 || fps <= 0) return frames[0];
