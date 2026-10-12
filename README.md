@@ -92,12 +92,14 @@ By default, the viewer loads `extracted/PSP_GAME/USRDIR/gamedata.bin` and resolv
 
 | Input | Action |
 |---|---|
-| **Right Mouse Button + Drag** | Look around (orbit / freelook) |
-| **W / A / S / D** | Move forward / left / backward / right |
-| **Q / E** | Move down / up |
-| **Shift** | Move faster (4x speed boost) |
-| **Scroll Wheel** | Adjust movement speed |
-| **Frame Button** | Center camera on active bounding box |
+| **Right Mouse Button + Drag** | Free-fly freelook (relative mouse capture, no edge limits) |
+| **W / A / S / D** | Fly forward / left / backward / right |
+| **Q / E** (or **Space / C**) | Fly down / up |
+| **Shift / Ctrl** | Speed multiplier: Shift = 4x boost, Ctrl = 0.25x precision |
+| **Middle Mouse Button (or Alt + LMB)** | Orbit around center pivot |
+| **Shift + MMB (or Shift + RMB)** | Pan camera along screen plane |
+| **Scroll Wheel** | Dolly zoom in / out (or adjust speed when flying with RMB) |
+| **F key** (or Frame button) | Focus / frame current bounding box |
 
 ## Tools & Pipeline
 

@@ -85,16 +85,43 @@ void WritePNG(const std::string& path, int w, int h, const std::vector<uint8_t>&
 
 struct Camera {
     glm::vec3 pos{0, 10, 30};
-    float yaw = -90, pitch = -20, fov = 60, speed = 20;
+    glm::vec3 pivot{0, 0, 0};
+    float yaw = -90.0f, pitch = -20.0f, fov = 60.0f, speed = 20.0f;
+
     glm::vec3 Forward() const {
         float y = glm::radians(yaw), p = glm::radians(pitch);
         return {std::cos(p) * std::cos(y), std::sin(p), std::cos(p) * std::sin(y)};
     }
+    glm::vec3 Right() const {
+        glm::vec3 r = glm::cross(Forward(), glm::vec3(0, 1, 0));
+        float len = glm::length(r);
+        return len > 0.0001f ? r / len : glm::vec3(1, 0, 0);
+    }
+    glm::vec3 Up() const {
+        return glm::normalize(glm::cross(Right(), Forward()));
+    }
     void Frame(glm::vec3 bmin, glm::vec3 bmax) {
-        glm::vec3 c = (bmin + bmax) * 0.5f;
+        pivot = (bmin + bmax) * 0.5f;
         float r = std::max(glm::length(bmax - bmin) * 0.5f, 1.0f);
-        pos = c - Forward() * (r / std::tan(glm::radians(fov) * 0.5f));
+        pos = pivot - Forward() * (r / std::tan(glm::radians(fov) * 0.5f));
         speed = std::max(r * 0.5f, 2.0f);
+    }
+    void Orbit(float dYaw, float dPitch) {
+        yaw += dYaw;
+        pitch = std::clamp(pitch + dPitch, -89.0f, 89.0f);
+        float dist = glm::length(pos - pivot);
+        if (dist < 0.1f) dist = 1.0f;
+        pos = pivot - Forward() * dist;
+    }
+    void Pan(float dx, float dy) {
+        float factor = speed * 0.05f;
+        glm::vec3 delta = -Right() * (dx * factor) + Up() * (dy * factor);
+        pos += delta;
+        pivot += delta;
+    }
+    void Dolly(float delta) {
+        float step = delta * (speed * 0.15f);
+        pos += Forward() * step;
     }
 };
 
@@ -433,26 +460,70 @@ int main(int argc, char** argv) {
         while (SDL_PollEvent(&e)) {
             ImGui_ImplSDL2_ProcessEvent(&e);
             if (e.type == SDL_QUIT) running = false;
-            if (e.type == SDL_MOUSEMOTION && (e.motion.state & SDL_BUTTON_RMASK) && !ImGui::GetIO().WantCaptureMouse) {
-                cam.yaw += e.motion.xrel * 0.2f;
-                cam.pitch = std::clamp(cam.pitch - e.motion.yrel * 0.2f, -89.f, 89.f);
+
+            bool uiMouse = ImGui::GetIO().WantCaptureMouse;
+            bool uiKey = ImGui::GetIO().WantCaptureKeyboard;
+
+            if (e.type == SDL_MOUSEBUTTONDOWN && !uiMouse) {
+                if (e.button.button == SDL_BUTTON_RIGHT || e.button.button == SDL_BUTTON_MIDDLE ||
+                    (e.button.button == SDL_BUTTON_LEFT && (SDL_GetModState() & KMOD_ALT))) {
+                    SDL_SetRelativeMouseMode(SDL_TRUE);
+                }
+            } else if (e.type == SDL_MOUSEBUTTONUP) {
+                if (SDL_GetRelativeMouseMode()) {
+                    Uint32 mstate = SDL_GetMouseState(nullptr, nullptr);
+                    if (!(mstate & (SDL_BUTTON_RMASK | SDL_BUTTON_MMASK | SDL_BUTTON_LMASK))) {
+                        SDL_SetRelativeMouseMode(SDL_FALSE);
+                    }
+                }
+            } else if (e.type == SDL_MOUSEMOTION) {
+                if (SDL_GetRelativeMouseMode()) {
+                    bool shift = (SDL_GetModState() & KMOD_SHIFT) != 0;
+                    bool alt = (SDL_GetModState() & KMOD_ALT) != 0;
+                    if (e.motion.state & SDL_BUTTON_MMASK) {
+                        if (shift) cam.Pan(float(e.motion.xrel), float(e.motion.yrel));
+                        else cam.Orbit(e.motion.xrel * 0.25f, -e.motion.yrel * 0.25f);
+                    } else if (e.motion.state & SDL_BUTTON_RMASK) {
+                        if (shift) {
+                            cam.Pan(float(e.motion.xrel), float(e.motion.yrel));
+                        } else {
+                            cam.yaw += e.motion.xrel * 0.2f;
+                            cam.pitch = std::clamp(cam.pitch - e.motion.yrel * 0.2f, -89.0f, 89.0f);
+                            cam.pivot = cam.pos + cam.Forward() * 20.0f;
+                        }
+                    } else if ((e.motion.state & SDL_BUTTON_LMASK) && alt) {
+                        cam.Orbit(e.motion.xrel * 0.25f, -e.motion.yrel * 0.25f);
+                    }
+                }
+            } else if (e.type == SDL_MOUSEWHEEL && !uiMouse) {
+                if (SDL_GetRelativeMouseMode() && (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_RMASK)) {
+                    cam.speed = std::max(0.5f, cam.speed * (e.wheel.y > 0 ? 1.25f : 0.8f));
+                } else {
+                    cam.Dolly(float(e.wheel.y) * 2.0f);
+                }
+            } else if (e.type == SDL_KEYDOWN && !uiKey) {
+                if (e.key.keysym.sym == SDLK_f) {
+                    cam.Frame(app.bmin, app.bmax);
+                }
             }
-            if (e.type == SDL_MOUSEWHEEL && !ImGui::GetIO().WantCaptureMouse)
-                cam.speed = std::max(0.5f, cam.speed * (e.wheel.y > 0 ? 1.25f : 0.8f));
         }
         Uint64 now = SDL_GetPerformanceCounter();
         float dt = float(now - last) / SDL_GetPerformanceFrequency();
         last = now;
         if (!ImGui::GetIO().WantCaptureKeyboard) {
             const Uint8* k = SDL_GetKeyboardState(nullptr);
-            glm::vec3 f = cam.Forward(), r = glm::normalize(glm::cross(f, glm::vec3(0, 1, 0)));
-            float s = cam.speed * dt * (k[SDL_SCANCODE_LSHIFT] ? 4.f : 1.f);
+            glm::vec3 f = cam.Forward(), r = cam.Right();
+            float mult = 1.0f;
+            if (k[SDL_SCANCODE_LSHIFT] || k[SDL_SCANCODE_RSHIFT]) mult = 4.0f;
+            if (k[SDL_SCANCODE_LCTRL] || k[SDL_SCANCODE_RCTRL]) mult = 0.25f;
+            float s = cam.speed * dt * mult;
             if (k[SDL_SCANCODE_W]) cam.pos += f * s;
             if (k[SDL_SCANCODE_S]) cam.pos -= f * s;
             if (k[SDL_SCANCODE_D]) cam.pos += r * s;
             if (k[SDL_SCANCODE_A]) cam.pos -= r * s;
-            if (k[SDL_SCANCODE_E]) cam.pos.y += s;
-            if (k[SDL_SCANCODE_Q]) cam.pos.y -= s;
+            if (k[SDL_SCANCODE_E] || k[SDL_SCANCODE_SPACE]) cam.pos.y += s;
+            if (k[SDL_SCANCODE_Q] || k[SDL_SCANCODE_C]) cam.pos.y -= s;
+            cam.pivot = cam.pos + cam.Forward() * 20.0f;
         }
 
         int fbw, fbh;
@@ -510,7 +581,7 @@ int main(int argc, char** argv) {
         ImGui::Checkbox("Instances (INS0)", &withInstances); ImGui::SameLine();
         ImGui::Checkbox("Entities (ENTS)", &withEntities); ImGui::SameLine();
         ImGui::Checkbox("Animate", &app.animate);
-        ImGui::Text("RMB look, WASD/QE move, Shift fast, wheel speed (%.1f)", cam.speed);
+        ImGui::Text("RMB fly | MMB orbit | Shift+MMB pan | Wheel zoom | F frame (spd %.1f)", cam.speed);
         if (ImGui::Button("Frame")) cam.Frame(app.bmin, app.bmax);
         ImGui::Separator();
         const auto& groups = app.gd.Groups();
