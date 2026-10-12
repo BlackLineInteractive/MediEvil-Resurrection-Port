@@ -467,42 +467,32 @@ int main(int argc, char** argv) {
             bool uiKey = ImGui::GetIO().WantCaptureKeyboard;
 
             if (e.type == SDL_MOUSEBUTTONDOWN && !uiMouse) {
-                if (e.button.button == SDL_BUTTON_RIGHT || e.button.button == SDL_BUTTON_MIDDLE ||
-                    (e.button.button == SDL_BUTTON_LEFT && (SDL_GetModState() & KMOD_ALT))) {
+                // 1-finger click on trackpad (LMB) or RMB or MMB anywhere in viewport: look around
+                if (e.button.button == SDL_BUTTON_LEFT || e.button.button == SDL_BUTTON_RIGHT || e.button.button == SDL_BUTTON_MIDDLE) {
                     SDL_SetRelativeMouseMode(SDL_TRUE);
                 }
             } else if (e.type == SDL_MOUSEBUTTONUP) {
                 if (SDL_GetRelativeMouseMode()) {
                     Uint32 mstate = SDL_GetMouseState(nullptr, nullptr);
-                    if (!(mstate & (SDL_BUTTON_RMASK | SDL_BUTTON_MMASK | SDL_BUTTON_LMASK))) {
+                    if (!(mstate & (SDL_BUTTON_LMASK | SDL_BUTTON_RMASK | SDL_BUTTON_MMASK))) {
                         SDL_SetRelativeMouseMode(SDL_FALSE);
                     }
                 }
             } else if (e.type == SDL_MOUSEMOTION) {
                 if (SDL_GetRelativeMouseMode()) {
                     bool shift = (SDL_GetModState() & KMOD_SHIFT) != 0;
-                    bool alt = (SDL_GetModState() & KMOD_ALT) != 0;
-                    if (e.motion.state & SDL_BUTTON_MMASK) {
-                        if (shift) cam.Pan(float(e.motion.xrel), float(e.motion.yrel));
-                        else cam.Orbit(e.motion.xrel * 0.25f, -e.motion.yrel * 0.25f);
-                    } else if (e.motion.state & SDL_BUTTON_RMASK) {
-                        if (shift) {
-                            cam.Pan(float(e.motion.xrel), float(e.motion.yrel));
-                        } else {
-                            cam.yaw += e.motion.xrel * 0.2f;
-                            cam.pitch = std::clamp(cam.pitch - e.motion.yrel * 0.2f, -89.0f, 89.0f);
-                            cam.pivot = cam.pos + cam.Forward() * 20.0f;
-                        }
-                    } else if ((e.motion.state & SDL_BUTTON_LMASK) && alt) {
-                        cam.Orbit(e.motion.xrel * 0.25f, -e.motion.yrel * 0.25f);
+                    if (shift) {
+                        cam.Pan(float(e.motion.xrel), float(e.motion.yrel));
+                    } else {
+                        // 1-finger drag on trackpad (LMB) or RMB: smooth camera rotation
+                        cam.yaw += e.motion.xrel * 0.2f;
+                        cam.pitch = std::clamp(cam.pitch - e.motion.yrel * 0.2f, -89.0f, 89.0f);
+                        cam.pivot = cam.pos + cam.Forward() * 20.0f;
                     }
                 }
             } else if (e.type == SDL_MOUSEWHEEL && !uiMouse) {
-                if (SDL_GetRelativeMouseMode() && (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_RMASK)) {
-                    cam.speed = std::max(0.5f, cam.speed * (e.wheel.y > 0 ? 1.25f : 0.8f));
-                } else {
-                    cam.Dolly(float(e.wheel.y) * 2.0f);
-                }
+                // Trackpad 2-finger scroll or mouse wheel: smooth zoom
+                cam.Dolly(float(e.wheel.y) * 1.5f);
             } else if (e.type == SDL_KEYDOWN && !uiKey) {
                 if (e.key.keysym.sym == SDLK_f) {
                     cam.Frame(app.bmin, app.bmax);
@@ -583,7 +573,7 @@ int main(int argc, char** argv) {
         ImGui::Checkbox("Instances (INS0)", &withInstances); ImGui::SameLine();
         ImGui::Checkbox("Entities (ENTS)", &withEntities); ImGui::SameLine();
         ImGui::Checkbox("Animate", &app.animate);
-        ImGui::Text("RMB fly | MMB orbit | Shift+MMB pan | Wheel zoom | F frame (spd %.1f)", cam.speed);
+        ImGui::Text("1 finger trackpad drag = Look | WASD+QE = Move | Scroll = Zoom | F = Frame (spd %.1f)", cam.speed);
         if (ImGui::Button("Frame")) cam.Frame(app.bmin, app.bmax);
         ImGui::Separator();
         const auto& groups = app.gd.Groups();
