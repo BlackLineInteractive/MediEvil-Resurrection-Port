@@ -411,3 +411,22 @@ game's acosf (table `0x3de210` from `FUN_0020f284`), and the pad stick filter `F
 Pad button table 0x33f380 (8 actions x 2 layouts): 0 Triangle, 1 Square/Cross, 2 Cross/Square, 3 Circle, 4 R,
 5 L, 6 Select, 7 Start. Danbrain posts messages to components instead of moving Dan itself (type 6 = move to
 point at speed, type 1 = stop; `FUN_001c5c98`), see `FUN_0008a854`.
+
+### 19.1 Running main() natively (platform layer)
+
+- `medievil-gametest <prx> main` runs the game's `main` (0x20cf8) after `.ctors`. Guest memory reserves the whole
+  4 GB (wild pointers read zeros); a crash or SIGTERM prints the last guest calls; `tools/hangbt.sh` attaches
+  lldb and prints the host stack (generated functions are ordinary C++ frames).
+- `src/Decomp/Platform.cpp`: thin native versions of PSP calls (files, memory, time, pad, UMD, sync objects).
+  Threads are not started (logged); heavy subsystems (GE, audio, video) are to be replaced at the level of the
+  game's own functions, not emulated. `PSP_TRACE=1` logs the calls.
+- Disc files: `sceIoGetstat` returns a made-up sector in `st_private[0]`; the game then opens the whole file raw as
+  `disc0:/sce_lbn0x<lbn>_size0x<size>` (gamedata.bin is read that way).
+- Prototypes: `docs/names_functions/psp_prototypes.tsv` + `ApplyPrototypes.java`. 64-bit arguments sit in an
+  aligned pair (a2:a3 for lseek, a1 skipped, whence in t0), modelled with explicit `_pad`/lo/hi parameters.
+- Ghidra keeps auto-analysis prototypes (often `void f(void)`) at call sites even when the callee's decompile
+  shows parameters/returns: `CommitSignatures.java` (run twice) commits the decompiler's view for every
+  function. Without it arguments passed in registers get lost (e.g. the asset count `a2` for `FUN_00221cf4`).
+- Ghidra-only `stack0xNNNN` (address taken, no variable): `CreateStackLocals.java` defines locals there.
+- Transpiler heuristics still applied: extra caller arguments extend a callee's parameter list and pass through
+  to its inner calls; a `void` function whose result is used returns its last call's value (v0).

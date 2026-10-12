@@ -110,6 +110,9 @@ def load(indir):
     dup = set()
     for line in open(os.path.join(indir, 'functions.tsv')):
         p = line.rstrip('\n').split('\t')
+        if len(p) >= 5 and '::' in p[4]:
+            QNAMES[p[4]] = int(p[0], 16)
+            names['QF_' + p[0]] = int(p[0], 16)
         if len(p) >= 2:
             if p[1] in names or p[1].startswith(('caseD_', 'switchD_', 'LAB_')):
                 dup.add(p[1])
@@ -192,6 +195,7 @@ def rewrite_types(code, unknown):
 
 
 unknown_struct_names = set()
+QNAMES = {}   # 'Namespace::name' -> addr (Ghidra functions inside namespaces)
 SIGS = {}   # addr -> [(name, is_float, type)] of every generated function
 MAXARGS = {}   # addr -> most arguments any call site passes
 USEDRET = set()   # addrs whose return value some call site uses
@@ -290,6 +294,9 @@ def gen_function(f, names, faddr_of, unknown, stub):
     body = f.text[he:]
     # strip Ghidra comments early (they may contain quotes)
     body = re.sub(r'/\*.*?\*/', '', body, flags=re.S)
+    # 0. namespaced function names -> unique identifiers
+    if QNAMES:
+        body = re.sub(r'\b(\w+(?:::\w+)+)\b', lambda m: 'QF_%08x' % QNAMES[m.group(1)] if m.group(1) in QNAMES else m.group(1), body)
     # 1. field access before anything renames identifiers
     body = rewrite_fields(body)
     # 2. types in declarations and casts
@@ -308,6 +315,11 @@ def gen_function(f, names, faddr_of, unknown, stub):
         body = re.sub(r'^\s*[^;\n()=]*\b' + re.escape(nm) + r'\b\s*(\[\d+\]\s*)*;[ \t]*\n', '', body, flags=re.M)
     uses_frame = [False]
     globs = {}
+    for (nm, a, size, gt) in list(f.globals):
+        if not re.fullmatch(ID, nm):
+            clean = 'G_%08x_' % a
+            body = body.replace(nm, clean)
+            f.globals.append((clean, a, size, gt))
     for (nm, a, size, gt) in f.globals:
         globs[nm] = global_access(nm, a, size, gt, unknown)
     # 4. token pass: identifiers -> globals / locals / functions; strings -> guest strings
@@ -337,7 +349,7 @@ def gen_function(f, names, faddr_of, unknown, stub):
             if t == 'builtin_strncpy':
                 out.append('::psp::builtin_strncpy'); prev = 'STRNCPY_PEND'; i += 1; continue
             l1, l2 = last_sig(1), last_sig(2)
-            addr_of = l1 >= 0 and out[l1] == '&' and (l2 < 0 or not re.match(r'[A-Za-z0-9_)\]]', out[l2][-1:])
+            addr_of = l1 >= 0 and out[l1] == '&' and (l2 < 0 or not re.match(r'[A-Za-z0-9_)\]]', out[l2][-1:]) or out[l2] in ('return', 'case', 'else', 'do')
                                                      or out[l2] == ')' and re.search(r'\(\s*(?:' + '|'.join(sorted(BASE_TYPES)) + r'|GP<[^()]*>)\s*\)$', ''.join(out[max(0, l2 - 12):l2 + 1])))
             if addr_of:
                 del out[l1 + 1:]

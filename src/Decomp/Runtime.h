@@ -42,8 +42,10 @@ struct U4 {
     operator uint32_t() const { return v; }
     explicit operator float() const { return BitCast<float>(v); }
     explicit operator double() const { return BitCast<float>(v); }
+    U4& operator*() const;   // an undefined4 used as a pointer
 };
 static_assert(sizeof(U4) == 4);
+inline U4& U4::operator*() const { return *reinterpret_cast<U4*>(g_mem + v); }
 
 // ── guest pointer ──
 template <class T> struct GP;
@@ -89,7 +91,7 @@ template <> struct GP<code> {
     GP() = default;
     template <class I, std::enable_if_t<std::is_integral_v<I>, int> = 0> GP(I v) : a(uint32_t(v)) {}
     GP(U4 v) : a(v.v) {}
-    template <class U> explicit GP(GP<U> p) : a(p.a) {}
+    template <class U> GP(GP<U> p) : a(p.a) {}
     operator uint32_t() const { return a; }
     CodeRef operator*() const { return {a}; }
     template <class... A> uint64_t operator()(A... args) const { return ICall(a, args...); }
@@ -469,6 +471,7 @@ template <class T> struct BC {
     T v;
     template <class A> BC(const A& a) { uint64_t u = UB(a); std::memcpy(&v, &u, sizeof(T)); }
     operator T() const { return v; }
+    template <class U = T, std::enable_if_t<!std::is_same_v<U, U4>, int> = 0> operator U4() const { return U4(v); }
 };
 
 // An unmarked (float)x is a numeric conversion (p-code INT2FLOAT / FLOAT2FLOAT): integers convert as

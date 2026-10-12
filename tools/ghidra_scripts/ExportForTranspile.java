@@ -67,7 +67,7 @@ public class ExportForTranspile extends GhidraScript {
                 String addr = f.getEntryPoint().toString();
                 Function thunk = f.isThunk() ? f.getThunkedFunction(true) : null;
                 idx.println(addr + "\t" + f.getName() + "\t" + f.getSignature().getPrototypeString()
-                        + "\t" + (thunk != null ? thunk.getName() : ""));
+                        + "\t" + (thunk != null ? thunk.getName() : "") + "\t" + f.getName(true));
                 if (f.isExternal() || f.isThunk()) continue;
                 if (only != null && !only.contains(addr)) continue;
 
