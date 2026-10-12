@@ -4,6 +4,8 @@ Real-time 3D level and model viewer, archive extraction toolkit, and reverse eng
 
 Opens the native PSP archive (`USRDIR/gamedata.bin`), decodes geometry and textures directly from disc data, and renders full levels and individual meshes using OpenGL 4.1.
 
+![MediEvil: Resurrection Viewer Preview](media/viewer_preview.png)
+
 ## Features
 
 - **Direct Archive Streaming:** Reads levels, models, and textures directly from `gamedata.bin` via binary search tree lookup without unpacking.
