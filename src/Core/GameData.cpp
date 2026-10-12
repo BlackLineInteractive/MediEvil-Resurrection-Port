@@ -48,36 +48,47 @@ bool GameData::Open(const std::string& path, std::string* err) {
     if (fread(hdr.data(), 1, kSector, f_) != kSector || memcmp(hdr.data(), "TOCS", 4) != 0)
         return fail("not a TOCS archive");
 
-    // TOCS: 16-byte header, then {char name[32]; u32 tocSize; u32 tocSector} until an empty name.
+    // TOC0 parsing shared by the resident TOC and the per-group TOCs.
+    // TOC0: nBlocks x 8B {u24 sector, u8 flags, u16 asset, u16 nextCopy},
+    //       nAssets x 20B {hash, size, type, u16 kind, u16 block, u16 bstLeft, u16 bstRight}
+    auto parseToc = [&](Group& g, uint32_t tocSize, uint32_t tocSector) {
+        std::vector<uint8_t> toc(tocSize);
+        fseek(f_, long(tocSector) * kSector, SEEK_SET);
+        if (fread(toc.data(), 1, tocSize, f_) != tocSize || memcmp(toc.data(), "TOC0", 4) != 0) return false;
+        uint32_t nBlocks = rd32(&toc[4]), nAssets = rd32(&toc[8]);
+        if (16 + size_t(nBlocks) * 8 + size_t(nAssets) * 20 > toc.size()) return false;
+        const uint8_t* blocks = &toc[16];
+        const uint8_t* recs = blocks + nBlocks * 8;
+        for (uint32_t i = 0; i < nAssets; ++i) {
+            const uint8_t* r = recs + i * 20;
+            Asset a;
+            a.hash = rd32(r);
+            a.size = rd32(r + 4);
+            a.type = rd32(r + 8);
+            a.kind = rd16(r + 12);
+            a.sector = rd32(blocks + rd16(r + 14) * 8) & 0xFFFFFF;
+            g.byHash.emplace(a.hash, g.assets.size());
+            g.assets.push_back(a);
+        }
+        return true;
+    };
+
+    // TOCS: u32 'TOCS', u32 groupCount, u32 residentTocSize, u32 residentTocSector, then
+    // {char name[32]; u32 tocSize; u32 tocSector} per group until an empty name.
     for (size_t pos = 16; pos + 40 <= hdr.size() && hdr[pos]; pos += 40) {
         Group g;
         g.name.assign(reinterpret_cast<const char*>(&hdr[pos]), strnlen(reinterpret_cast<const char*>(&hdr[pos]), 32));
         g.index = int(groups_.size());
         uint32_t tocSize = rd32(&hdr[pos + 32]), tocSector = rd32(&hdr[pos + 36]);
-        if (tocSize) {
-            std::vector<uint8_t> toc(tocSize);
-            fseek(f_, long(tocSector) * kSector, SEEK_SET);
-            if (fread(toc.data(), 1, tocSize, f_) != tocSize || memcmp(toc.data(), "TOC0", 4) != 0)
-                return fail("bad TOC0");
-            // TOC0: nBlocks x 8B {u24 sector, u8 flags, u16 asset, u16 nextCopy},
-            //       nAssets x 20B {hash, size, type, u16 kind, u16 block, u16 bstLeft, u16 bstRight}
-            uint32_t nBlocks = rd32(&toc[4]), nAssets = rd32(&toc[8]);
-            const uint8_t* blocks = &toc[16];
-            const uint8_t* recs = blocks + nBlocks * 8;
-            for (uint32_t i = 0; i < nAssets; ++i) {
-                const uint8_t* r = recs + i * 20;
-                Asset a;
-                a.hash = rd32(r);
-                a.size = rd32(r + 4);
-                a.type = rd32(r + 8);
-                a.kind = rd16(r + 12);
-                a.sector = rd32(blocks + rd16(r + 14) * 8) & 0xFFFFFF;
-                g.byHash.emplace(a.hash, g.assets.size());
-                g.assets.push_back(a);
-            }
-        }
+        if (tocSize && !parseToc(g, tocSize, tocSector)) return fail("bad TOC0");
         groups_.push_back(std::move(g));
     }
+    // The resident TOC (sector 1): assets that are always loaded - Dan, his animations, shared effects.
+    // Appended last so the indices of the named groups stay the same.
+    Group res;
+    res.name = "resident";
+    res.index = int(groups_.size());
+    if (parseToc(res, rd32(&hdr[8]), rd32(&hdr[12]))) groups_.push_back(std::move(res));
     return true;
 }
 

@@ -154,17 +154,36 @@ bool ParseFragment(const Chunk& frg, Fragment& out) {
     return true;
 }
 
-void AppendFragment(MeshData& m, const Fragment& f, int texture, uint32_t material) {
+void AppendFragment(MeshData& m, const Fragment& f, int texture, uint32_t material, int holder) {
     uint32_t base = uint32_t(m.vertices.size());
     Batch b;
     b.firstIndex = uint32_t(m.indices.size());
     b.texture = texture;
     b.material = material;
+    b.holder = holder;
     m.vertices.insert(m.vertices.end(), f.verts.begin(), f.verts.end());
-    if (!f.skin.empty() || !m.skin.empty()) {
-        m.skin.resize(base);   // rigid fragments before the first skinned one bind to joint 0
-        if (f.skin.empty()) m.skin.resize(m.vertices.size());
-        else m.skin.insert(m.skin.end(), f.skin.begin(), f.skin.end());
+    // rigid fragments follow their holder's joint (joint 0 when the holder has none)
+    int rigid = holder >= 0 && holder < int(m.holders.size()) && m.holders[holder].joint >= 0 ? m.holders[holder].joint : 0;
+    if (!f.skin.empty() || !m.skin.empty() || rigid > 0) {
+        if (m.skin.size() < base) {
+            // earlier rigid fragments: bind each to its holder joint
+            size_t first = m.skin.size();
+            m.skin.resize(base);
+            for (const Batch& pb : m.batches) {
+                int j = pb.holder >= 0 && pb.holder < int(m.holders.size()) ? std::max(m.holders[pb.holder].joint, 0) : 0;
+                for (uint32_t i = 0; i < pb.indexCount; ++i) {
+                    uint32_t v = m.indices[pb.firstIndex + i];
+                    if (v >= first && v < base) m.skin[v].joint[0] = uint8_t(j);
+                }
+            }
+        }
+        if (f.skin.empty()) {
+            SkinWeights w;
+            w.joint[0] = uint8_t(rigid);
+            m.skin.resize(m.vertices.size(), w);
+        } else {
+            m.skin.insert(m.skin.end(), f.skin.begin(), f.skin.end());
+        }
     }
     uint32_t s = 0;
     for (uint16_t n : f.strips) {
@@ -209,11 +228,17 @@ void ParseTextureList(const Chunk& tex0, std::vector<TextureRef>& out) {
 void AppendMeshHolder(MeshData& m, const Chunk& fmh0, const std::vector<Fragment>& pool,
                       std::vector<uint8_t>* poolUsed) {
     uint32_t material = 0;
+    int holder = int(m.holders.size());
+    m.holders.emplace_back();
     std::vector<uint16_t> refs;
     std::vector<int> txi;
     std::vector<Fragment> local;
     ForEachChunk(fmh0, [&](const Chunk& c) {
-        if (c.Is("MFL1")) material = c.At<uint32_t>(0);
+        if (c.Is("MFL1")) {
+            material = c.At<uint32_t>(0);
+            m.holders[holder].joint = int((material >> 16) & 0x7F) - 1;
+        } else if (c.Is("NAME"))
+            m.holders[holder].name.assign(reinterpret_cast<const char*>(c.data), strnlen(reinterpret_cast<const char*>(c.data), c.size));
         else if (c.Is("FRR0"))
             for (uint32_t o = 0; o + 2 <= c.size; o += 2) {
                 uint16_t v = c.At<uint16_t>(o);
@@ -236,7 +261,7 @@ void AppendMeshHolder(MeshData& m, const Chunk& fmh0, const std::vector<Fragment
             if (poolUsed) (*poolUsed)[refs[i]] = 1;
             f = &pool[refs[i]];
         }
-        if (f) AppendFragment(m, *f, i < txi.size() ? txi[i] : -1, material);
+        if (f) AppendFragment(m, *f, i < txi.size() ? txi[i] : -1, material, holder);
     }
 }
 

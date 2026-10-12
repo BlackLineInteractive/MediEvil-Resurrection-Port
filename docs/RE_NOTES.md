@@ -281,3 +281,54 @@ with GE lighting on and `sceGuColorMaterial(7)`, so the baked vertex colour is t
 - Each LIT light gets its diffuse colour, with ambient black, and `sceGuLightAtt(0, 0, 1/(r²)²)`.
   `FUN_00217868` stores r² at +0x3c. The effective attenuation is `min(1, r⁴/d²)`.
 - Dan's Crypt lava room: one light at (−60.0, −0.6, −19.7), r 2.03, colour (1, .74, 0).
+
+## 16. Resident TOC and Sir Daniel
+
+- **TOCS header**: `u32 'TOCS', u32 groupCount (48), u32 residentTocSize, u32 residentTocSector (1)`,
+  then the group table. Sector 1 holds a **resident TOC0** of 2889 assets that the 48 groups do not
+  list: Dan (`dan.skel`, `dan.atbl`, 205 ANIMs), shared effects, and more. `GameData` appends it as the
+  last group, named "resident".
+- Dan is spawned by code, not by ENTS. Strings in `main.prx`: `RES=exporteddata/characters/dan/dan.group`,
+  `ANIMS=.../dan_apkg.group`, and `PLUGIN=<DAN_TRACKING PERS=1 VIEWLEN=4.25 MAX_VIEWLEN=4.5 Y_OFFSET=2.5>`
+  (the camera).
+- `dan.skel` has 42 joints (`weapon_r` = 17, `shield` = 12) and 55 holders:
+  - `dan_*`: the default body;
+  - `dad_*`: a costume variant;
+  - `captainshat`, `wooden_leg`, `spade`, `TorsoShape1`: props and costume parts that the game
+    switches on per level.
+- **Holder joint**: `((MFL1 >> 16) & 0x7F) − 1` is the joint that the holder is rigidly attached to
+  (holder+9; `FUN_00218be0` multiplies by `DAT_003ee9b0 + joint*0x40`). Verified by name: thigh_l →
+  hip_l, head → head, spade → wrist_r. Fragments without weights follow that joint.
+- **dan.atbl** (179 records): `{animHash, state, float, float variant, ...}`. ANIM names are not
+  recovered; the states were identified visually:
+
+  | state | meaning |
+  |---|---|
+  | 4 | idle (variants 0/1/110, 200/201 = long "bored" idles) |
+  | 1 | walk |
+  | 0 | run (variant 2 = sprint) |
+  | 2, 3, 44–47 | strafe/diagonal cycles |
+  | 28 | attacks; the 3rd float is the weapon type (2, 3, 7, 8, 11, 12, 14, 16, 17, 18, 20, 21, 22) |
+  | 64, 35, 38, 41, 97 | other sets |
+
+  The animations have no root motion. The model faces +Z.
+- Weapons are separate meshes on joint `weapon_r`, e.g. `all_sword_short.mesh`. Joint world matrix =
+  `palette[j] * inverse(invBind[j])`.
+
+## 17. Collision (TCD)
+
+- The asset is `"<subzone>.tcd"` (228 of 245 sub-zones), in world space. TCD0 header (0x28 bytes):
+  - `u32 ?`, `u32 triOffset`;
+  - `vec3 centre`, `float halfSize`;
+  - `u32 vertOffset`, `u32 0`.
+- After the header comes an octree of u16 entries (0x8000 = child node).
+- Triangles start at `triOffset`, as `{u16 a, b, c, u16 flags}`; the high nibble of `flags` is probably
+  the surface type.
+- Vertices are `float3` from `vertOffset` to the end of the file; `vertOffset` can follow padding.
+  Validated on all 228 files.
+- The viewer ignores the octree. It builds an XZ grid and runs a simple character controller:
+  - ground ray, with a 0.45 m step;
+  - two wall spheres;
+  - camera pull-in.
+
+  This is not yet a port of the game's own movement code (DanBrain).

@@ -33,6 +33,14 @@ struct Batch {
     uint32_t firstIndex = 0, indexCount = 0;
     int texture = -1;              // index into MeshData::textures, -1 = untextured
     uint32_t material = 0;         // raw MFL1 word of the owning FMH0
+    int holder = -1;               // index into MeshData::holders
+};
+
+// FMH0 mesh holder of a model: NAME ("dan_headShape") and the joint it is rigidly attached to,
+// ((MFL1 >> 16) & 0x7F) - 1 (holder+9, FUN_002182bc; FUN_00218be0 multiplies by that joint's matrix).
+struct Holder {
+    std::string name;
+    int joint = -1;
 };
 
 struct TextureRef {
@@ -52,6 +60,7 @@ struct MeshData {
     std::vector<uint32_t> indices;
     std::vector<Batch> batches;
     std::vector<TextureRef> textures;
+    std::vector<Holder> holders;
     glm::vec3 bmin{1e30f}, bmax{-1e30f};
     int fragments = 0;
     std::string error;
@@ -64,7 +73,7 @@ struct Fragment {
 };
 
 bool ParseFragment(const Chunk& frg, Fragment& out);
-void AppendFragment(MeshData& m, const Fragment& f, int texture, uint32_t material);
+void AppendFragment(MeshData& m, const Fragment& f, int texture, uint32_t material, int holder = -1);
 void ParseTextureList(const Chunk& tex0, std::vector<TextureRef>& out);
 
 // FMH0 holder: resolves its fragment refs against `pool` (may be empty for INST/MESH) and appends them.
