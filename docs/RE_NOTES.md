@@ -299,19 +299,29 @@ with GE lighting on and `sceGuColorMaterial(7)`, so the baked vertex colour is t
 - **Holder joint**: `((MFL1 >> 16) & 0x7F) − 1` is the joint that the holder is rigidly attached to
   (holder+9; `FUN_00218be0` multiplies by `DAT_003ee9b0 + joint*0x40`). Verified by name: thigh_l →
   hip_l, head → head, spade → wrist_r. Fragments without weights follow that joint.
-- **dan.atbl** (179 records): `{animHash, state, float, float variant, ...}`. ANIM names are not
-  recovered; the states were identified visually:
+- **dan.atbl** (179 records): `{animHash, state, float, float variant, float type, ...}`. The ANIM names
+  are not recovered. The states were identified with `medievil-viewer --atbl-report dan`: it plays
+  every record and reports the velocity of the planted ankle, which is minus the body velocity, plus
+  the pelvis height range and the facing:
 
   | state | meaning |
   |---|---|
-  | 4 | idle (variants 0/1/110, 200/201 = long "bored" idles) |
-  | 1 | walk |
-  | 0 | run (variant 2 = sprint) |
-  | 2, 3, 44–47 | strafe/diagonal cycles |
-  | 28 | attacks; the 3rd float is the weapon type (2, 3, 7, 8, 11, 12, 14, 16, 17, 18, 20, 21, 22) |
-  | 64, 35, 38, 41, 97 | other sets |
+  | 4 | idle (var 0; 1 = stop, 110 = idle variant, 200/201 = long "bored" idles) |
+  | 0 | forward: var 0 walk 2.06 m/s, 1 run 2.39 m/s (bigger bob), 2 fast run 3.26 m/s |
+  | 1 | backward (1.83 m/s) |
+  | 2 / 3 | strafe +X / −X |
+  | 44 / 45 | forward diagonals +X / −X |
+  | 46 / 47 | backward diagonals |
+  | 64 | jump: var 0 take-off (0.2 s), 1 airborne (0.13 s, held), 2 landing (pelvis drops to 0.83), 3/4 loops; 10–14 / 20–24 repeat the set |
+  | 28 | attacks, type = weapon. Type 2 (one-handed sword): var 0, 1, 2 = three-hit combo (0.83 / 0.80 / 1.8 s), 10–12 / 50–56 / 70–72 other sets, 100–102 loops |
+  | 38 | hit reactions |
+  | 97 | crouch (pelvis 0.66) |
+  | 41 | stationary loop |
+  | 35 | climbing / special (pelvis 0.1–2.95) |
 
-  The animations have no root motion. The model faces +Z.
+  The animations have no root motion and the model faces +Z. The viewer plays them at speed / natural
+  speed, blending walk and run on a shared phase.
+- Enemy reactions use the recovered names `<anims>_trip.anim` (hit) and `<anims>_death.anim`.
 - Weapons are separate meshes on joint `weapon_r`, e.g. `all_sword_short.mesh`. Joint world matrix =
   `palette[j] * inverse(invBind[j])`.
 

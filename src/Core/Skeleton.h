@@ -47,12 +47,50 @@ struct Animation {
     std::vector<glm::vec3> tran;   // frames * tranJoints
     std::vector<glm::vec3> scal;   // frames * scalJoints
     bool Loops() const { return !(flags & 0x10); }
+    float Length() const;
     std::string error;
 };
 
 bool LoadAnimation(const std::vector<uint8_t>& animAsset, Animation& out);
 
+// Joint-local pose (bind pose with the animation applied).
+struct LocalPose {
+    std::vector<glm::quat> rot;
+    std::vector<glm::vec3> pos, scl;
+};
+
+// `time` wraps for looping animations and clamps otherwise; bind pose when anim is null.
+void SampleLocal(const Skeleton& skel, const Animation* anim, float time, LocalPose& out);
+void BlendPose(LocalPose& a, const LocalPose& b, float w);   // a = mix(a, b, w)
+void PoseToPalette(const Skeleton& skel, const LocalPose& pose, std::vector<glm::mat4>& palette,
+                   std::vector<glm::mat4>* world = nullptr);
+
 // Skinning palette (world * invBind per joint) for `anim` at `time` seconds; bind pose when anim is null.
 void SamplePose(const Skeleton& skel, const Animation* anim, float time, std::vector<glm::mat4>& palette);
+
+// Plays one animation (optionally blended with a second one on the same phase, e.g. walk/run) and
+// crossfades from the previous pose when the animation changes.
+class Animator {
+public:
+    void SetSkeleton(const Skeleton* s) { skel_ = s; }
+    void Play(const Animation* a, const Animation* b = nullptr, float weightB = 0, float rate = 1, float fade = 0.15f,
+              bool restart = false);
+    void Update(float dt);
+    void Evaluate(LocalPose& out) const;
+    const Animation* Current() const { return cur_.a; }
+    float Time() const { return cur_.time; }
+    float Progress() const;   // time / length (0..1+ for one-shots)
+    bool Finished() const;    // a one-shot reached its end
+private:
+    struct Layer {
+        const Animation* a = nullptr;
+        const Animation* b = nullptr;
+        float weightB = 0, rate = 1, time = 0;
+    };
+    const Skeleton* skel_ = nullptr;
+    Layer cur_;
+    LocalPose prevPose_;
+    float fadeT_ = 0, fadeLen_ = 0;
+};
 
 } // namespace med

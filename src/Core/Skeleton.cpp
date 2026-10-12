@@ -5,6 +5,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 
@@ -141,39 +142,115 @@ bool LoadAnimation(const std::vector<uint8_t>& data, Animation& out) {
     return F > 0;
 }
 
-void SamplePose(const Skeleton& skel, const Animation* anim, float time, std::vector<glm::mat4>& palette) {
+float Animation::Length() const { return frames > 1 ? frameTime * float(frames - 1) : 0.0f; }
+
+void SampleLocal(const Skeleton& skel, const Animation* anim, float time, LocalPose& out) {
     size_t n = skel.Size();
-    std::vector<glm::quat> rot(skel.bindRot);
-    std::vector<glm::vec3> pos(skel.bindPos), scl(n, glm::vec3(1));
-    if (anim && anim->frames) {
-        float len = anim->frameTime * float(anim->frames - 1);
-        float t = len > 0 ? (anim->Loops() ? std::fmod(time, len) : std::min(time, len)) : 0;
-        float f = t / anim->frameTime;
-        size_t f0 = std::min<size_t>(size_t(f), anim->frames - 1), f1 = std::min<size_t>(f0 + 1, anim->frames - 1);
-        float a = f - float(f0);
-        auto lerpTrack = [&](const auto& joints, const auto& keys, auto& dst, auto mix) {
-            size_t k = joints.size();
-            for (size_t i = 0; i < k; ++i) {
-                int j = skel.Find(joints[i]);
-                if (j >= 0) dst[j] = mix(keys[f0 * k + i], keys[f1 * k + i], a);
-            }
-        };
-        // ROTA keys are relative to the bind rotation, like TRAN keys are relative to the bind position
-        std::vector<glm::quat> rel(n, glm::quat(1, 0, 0, 0));
-        lerpTrack(anim->rotJoints, anim->rot, rel, [](glm::quat x, glm::quat y, float s) { return glm::slerp(x, y, s); });
-        for (size_t j = 0; j < n; ++j) rot[j] = rot[j] * rel[j];
-        // TRAN keys are offsets from the bind position (pelvis key ~(0,-0.07,0) vs bind height 1.16)
-        std::vector<glm::vec3> offs(n, glm::vec3(0));
-        lerpTrack(anim->tranJoints, anim->tran, offs, [](glm::vec3 x, glm::vec3 y, float s) { return glm::mix(x, y, s); });
-        for (size_t j = 0; j < n; ++j) pos[j] += offs[j];
-        lerpTrack(anim->scalJoints, anim->scal, scl, [](glm::vec3 x, glm::vec3 y, float s) { return glm::mix(x, y, s); });
+    out.rot = skel.bindRot;
+    out.pos = skel.bindPos;
+    out.scl.assign(n, glm::vec3(1));
+    if (!anim || !anim->frames) return;
+    float len = anim->Length();
+    float t = len > 0 ? (anim->Loops() ? std::fmod(std::fmod(time, len) + len, len) : std::clamp(time, 0.0f, len)) : 0;
+    float f = anim->frameTime > 0 ? t / anim->frameTime : 0;
+    size_t f0 = std::min<size_t>(size_t(f), anim->frames - 1), f1 = std::min<size_t>(f0 + 1, anim->frames - 1);
+    float a = f - float(f0);
+    auto lerpTrack = [&](const auto& joints, const auto& keys, auto apply) {
+        size_t k = joints.size();
+        for (size_t i = 0; i < k; ++i) {
+            int j = skel.Find(joints[i]);
+            if (j >= 0) apply(size_t(j), keys[f0 * k + i], keys[f1 * k + i]);
+        }
+    };
+    // ROTA keys are relative to the bind rotation, TRAN keys are offsets from the bind position
+    // (pelvis key ~(0,-0.07,0) vs bind height 1.16); absolute keys lay characters on the ground
+    lerpTrack(anim->rotJoints, anim->rot, [&](size_t j, glm::quat x, glm::quat y) { out.rot[j] = out.rot[j] * glm::slerp(x, y, a); });
+    lerpTrack(anim->tranJoints, anim->tran, [&](size_t j, glm::vec3 x, glm::vec3 y) { out.pos[j] += glm::mix(x, y, a); });
+    lerpTrack(anim->scalJoints, anim->scal, [&](size_t j, glm::vec3 x, glm::vec3 y) { out.scl[j] = glm::mix(x, y, a); });
+}
+
+void BlendPose(LocalPose& a, const LocalPose& b, float w) {
+    if (w <= 0) return;
+    for (size_t j = 0; j < a.rot.size() && j < b.rot.size(); ++j) {
+        a.rot[j] = glm::slerp(a.rot[j], b.rot[j], w);
+        a.pos[j] = glm::mix(a.pos[j], b.pos[j], w);
+        a.scl[j] = glm::mix(a.scl[j], b.scl[j], w);
     }
+}
+
+void PoseToPalette(const Skeleton& skel, const LocalPose& pose, std::vector<glm::mat4>& palette,
+                   std::vector<glm::mat4>* worldOut) {
+    size_t n = skel.Size();
     std::vector<glm::mat4> world(n);
     palette.resize(n);
     for (size_t j = 0; j < n; ++j) {
-        glm::mat4 local = Compose(pos[j], rot[j], scl[j]);
+        glm::mat4 local = Compose(pose.pos[j], pose.rot[j], pose.scl[j]);
         world[j] = skel.parent[j] < 0 ? local : world[skel.parent[j]] * local;
         palette[j] = world[j] * skel.invBind[j];
+    }
+    if (worldOut) *worldOut = std::move(world);
+}
+
+void SamplePose(const Skeleton& skel, const Animation* anim, float time, std::vector<glm::mat4>& palette) {
+    LocalPose pose;
+    SampleLocal(skel, anim, time, pose);
+    PoseToPalette(skel, pose, palette);
+}
+
+// Animator: current layer (+ optional second animation blended on the same phase) and the pose it
+// replaced, faded out over `fade` seconds.
+void Animator::Play(const Animation* a, const Animation* b, float weightB, float rate, float fade, bool restart) {
+    if (!restart) {
+        // same primary: only the blend partner / weight / rate change, the cycle keeps running
+        if (cur_.a == a) {
+            cur_.b = b;
+            cur_.weightB = weightB;
+            cur_.rate = rate;
+            return;
+        }
+        // the blend partner became the primary (e.g. walk -> run): keep the shared phase
+        if (a && cur_.b == a && cur_.a && a->Loops()) {
+            float la = cur_.a->Length(), lb = a->Length();
+            float phase = la > 0 ? std::fmod(cur_.time / la, 1.0f) : 0;
+            cur_ = {a, b, weightB, rate, phase * lb};
+            return;
+        }
+    }
+    if (skel_ && cur_.a) {
+        Evaluate(prevPose_);
+        fadeLen_ = fade;
+        fadeT_ = fade;
+    }
+    cur_ = {a, b, weightB, rate, 0.0f};
+}
+
+void Animator::Update(float dt) {
+    cur_.time += dt * cur_.rate;
+    if (fadeT_ > 0) fadeT_ = std::max(0.0f, fadeT_ - dt);
+}
+
+bool Animator::Finished() const { return cur_.a && !cur_.a->Loops() && cur_.time >= cur_.a->Length(); }
+
+float Animator::Progress() const {
+    float len = cur_.a ? cur_.a->Length() : 0;
+    return len > 0 ? cur_.time / len : 1.0f;
+}
+
+void Animator::Evaluate(LocalPose& out) const {
+    if (!skel_) return;
+    SampleLocal(*skel_, cur_.a, cur_.time, out);
+    if (cur_.b && cur_.weightB > 0) {
+        // same normalised phase in both cycles
+        LocalPose pb;
+        float la = cur_.a ? cur_.a->Length() : 0, lb = cur_.b->Length();
+        float phase = la > 0 ? cur_.time / la : 0;
+        SampleLocal(*skel_, cur_.b, phase * lb, pb);
+        BlendPose(out, pb, cur_.weightB);
+    }
+    if (fadeT_ > 0 && fadeLen_ > 0 && !prevPose_.rot.empty()) {
+        LocalPose cur = out;
+        out = prevPose_;
+        BlendPose(out, cur, 1.0f - fadeT_ / fadeLen_);
     }
 }
 

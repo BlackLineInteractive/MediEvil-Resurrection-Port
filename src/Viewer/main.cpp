@@ -4,9 +4,9 @@
 //                   [--group N] [--model name.mesh] [--shot out.png] [--yaw deg] [--pitch deg]
 //
 // --shot renders one frame with the camera framing the loaded geometry, writes a PNG and exits.
-// Play mode: P (or the "Play as Dan" checkbox) drops Sir Daniel where the camera looks; WASD move,
-// Shift walk, Space jump, drag to orbit the camera. --play x,y,z [--play-move x,y --play-time s] does the
-// same for --shot. --model x.skel --anim <hash> previews an animation.
+// Play mode: P (or the "Play as Dan" checkbox) drops Sir Daniel where the camera looks; WASD walk,
+// Shift run, Shift+Ctrl sprint burst, Space jump, J or a short click attacks (3-hit combo), drag to orbit the camera. --play x,y,z [--play-move x,y --play-time s --play-jump t --play-attack every]
+// does the same for --shot. --atbl-report <model> prints the motion of every ATBL animation. --model x.skel --anim <hash> previews an animation.
 #include "Core/GameData.h"
 #include "Core/Geometry.h"
 #include "Core/World.h"
@@ -139,6 +139,12 @@ struct AnimatedModel {
     float phase = 0;
     std::vector<Vertex> posed;
     std::string base;   // model base name (diagnostics)
+    // combat state (viewer-side until the brains are ported)
+    glm::vec3 pos{0};
+    int hp = 3;
+    std::shared_ptr<const Animation> hitAnim, deathAnim;   // <anims>_trip / <anims>_death
+    int mode = 0;        // 0 idle, 1 hit reaction, 2 dead
+    float modeTime = 0;
 };
 
 void Skin(const MeshData& bind, const std::vector<glm::mat4>& palette, std::vector<Vertex>& out) {
@@ -192,7 +198,7 @@ struct App {
     bool playing = false;
     std::shared_ptr<const MeshData> danBind;
     std::shared_ptr<const Skeleton> danSkel;
-    std::shared_ptr<const Animation> danAnims[4];   // PlayerAnim order: Idle, Walk, Run, Air
+    std::vector<std::shared_ptr<const Animation>> danAnimRefs;   // keeps player.anims alive
     const GpuMesh* danMesh = nullptr;
     std::vector<Vertex> danPosed;
     size_t danItem = SIZE_MAX;
@@ -313,6 +319,11 @@ struct App {
                     am.skel = src->skel;
                     am.anim = IdleAnim(e.AnimBaseName(), g);
                     am.base = base;
+                    am.pos = e.Position();
+                    std::string ab = e.AnimBaseName();
+                    am.hitAnim = LoadAnim(NameHash(ab + "_trip.anim"), g);
+                    am.deathAnim = LoadAnim(NameHash(ab + "_death.anim"), g);
+                    if (!am.deathAnim) am.deathAnim = LoadAnim(NameHash(ab + "_dead.anim"), g);
                     meshes.push_back(ren.Upload(*am.bind, gd, g, true));
                     am.mesh = meshes.back().get();
                     meshTris[am.mesh] = am.bind->indices.size() / 3;
@@ -415,17 +426,19 @@ struct App {
                  ", collision " + std::to_string(collision.Size()) + " tris";
     }
     // ATBL record {u32 animHash, u32 state, float ?, float variant, ...} (56 bytes after an 8-byte header)
-    std::shared_ptr<const Animation> AtblAnim(uint32_t atblHash, uint32_t state, float variant, int g) {
+    // `type`: third float of the record (weapon type for attacks), -1 = any
+    std::shared_ptr<const Animation> AtblAnim(uint32_t atblHash, uint32_t state, float variant, int g, float type = -1) {
         const Asset* t = gd.Find(atblHash, g);
         if (!t) return nullptr;
         auto tb = gd.Read(*t);
         for (size_t o = 8; o + 56 <= tb.size(); o += 56) {
             uint32_t h, st;
-            float v;
+            float v, ty;
             memcpy(&h, tb.data() + o, 4);
             memcpy(&st, tb.data() + o + 4, 4);
             memcpy(&v, tb.data() + o + 12, 4);
-            if (st == state && v == variant) return LoadAnim(h, g);
+            memcpy(&ty, tb.data() + o + 16, 4);
+            if (st == state && v == variant && (type < 0 || ty == type)) return LoadAnim(h, g);
         }
         return nullptr;
     }
@@ -448,10 +461,23 @@ struct App {
         danBind = md;
         danSkel = sk;
         uint32_t atbl = NameHash("dan.atbl");
-        danAnims[int(PlayerAnim::Idle)] = AtblAnim(atbl, 4, 0, g);
-        danAnims[int(PlayerAnim::Walk)] = AtblAnim(atbl, 1, 0, g);
-        danAnims[int(PlayerAnim::Run)] = AtblAnim(atbl, 0, 0, g);
-        danAnims[int(PlayerAnim::Air)] = danAnims[int(PlayerAnim::Idle)];
+        danAnimRefs.clear();
+        // states / variants: see Core/Player.h
+        auto take = [&](uint32_t state, float var, float type = -1) {
+            auto a = AtblAnim(atbl, state, var, g, type);
+            danAnimRefs.push_back(a);
+            return a.get();
+        };
+        PlayerAnims& pa = player.anims;
+        pa.idle = take(4, 0);
+        pa.walk = take(0, 0);
+        pa.run = take(0, 1);
+        pa.sprint = take(0, 2);
+        pa.jumpStart = take(64, 0);
+        pa.air = take(64, 1);
+        pa.land = take(64, 2);
+        for (int i = 0; i < 3; ++i) pa.attack[i] = take(28, float(i), 2);
+        player.animator.SetSkeleton(danSkel.get());
         meshes.push_back(ren.Upload(*danBind, gd, g, true));
         danMesh = meshes.back().get();
         meshTris[danMesh] = danBind->indices.size() / 3;
@@ -480,8 +506,10 @@ struct App {
     }
     void UpdateDan() {
         if (danItem == SIZE_MAX) return;
-        std::vector<glm::mat4> pal;
-        SamplePose(*danSkel, danAnims[int(player.anim)].get(), player.animTime, pal);
+        std::vector<glm::mat4> pal, world;
+        LocalPose pose;
+        player.animator.Evaluate(pose);
+        PoseToPalette(*danSkel, pose, pal, &world);
         Skin(*danBind, pal, danPosed);
         ren.UpdateVertices(*danMesh, danPosed);
         items[danItem].model = glm::translate(glm::mat4(1.0f), player.pos) *
@@ -489,10 +517,35 @@ struct App {
         items[danItem].light = ZoneLight(player.pos, player.pos);
         if (swordItem != SIZE_MAX) {
             // joint world = palette * bind world (palette = world * inverse bind)
-            glm::mat4 jointWorld = pal[weaponJoint] * glm::inverse(danSkel->invBind[weaponJoint]);
-            items[swordItem].model = items[danItem].model * jointWorld;
+            items[swordItem].model = items[danItem].model * world[weaponJoint];
             items[swordItem].light = items[danItem].light;
         }
+    }
+
+    // A swing that connects hits every living animated entity near the blade: trip, or die on the 3rd hit.
+    void ResolvePlayerHit() {
+        if (!player.hitFrame) return;
+        glm::vec3 c = player.HitCentre();
+        for (auto& am : animated) {
+            if (am.mode == 2) continue;
+            glm::vec3 d = am.pos + glm::vec3(0, 1.0f, 0) - c;
+            if (glm::length(d) > player.HitRadius() + 0.5f) continue;
+            if (--am.hp <= 0) am.mode = 2;
+            else if (am.hitAnim) am.mode = 1;
+            am.modeTime = 0;
+        }
+    }
+    // Pose of an animated entity for this frame (idle loop, hit reaction, death held on its last frame).
+    const Animation* EntityAnim(AnimatedModel& am, float idleTime, float& t, float dt) {
+        am.modeTime += dt;
+        if (am.mode == 1 && am.hitAnim && am.modeTime < am.hitAnim->Length()) { t = am.modeTime; return am.hitAnim.get(); }
+        if (am.mode == 1) am.mode = 0;
+        if (am.mode == 2 && am.deathAnim) {
+            t = std::min(am.modeTime, std::max(am.deathAnim->Length() - 1e-3f, 0.0f));
+            return am.deathAnim.get();
+        }
+        t = idleTime + am.phase;
+        return animate ? am.anim.get() : nullptr;
     }
 
     // `anim`: ANIM hash to play on a skinned model (0: bind pose)
@@ -540,7 +593,8 @@ PlayerInput ReadPlayerInput(const Camera& cam, const Uint8* k) {
     if (glm::length(in.move) > 1) in.move = glm::normalize(in.move);
     glm::vec3 f = cam.Forward();
     in.camYaw = std::atan2(f.x, f.z);
-    in.walk = k[SDL_SCANCODE_LSHIFT] || k[SDL_SCANCODE_RSHIFT];
+    in.run = k[SDL_SCANCODE_LSHIFT] || k[SDL_SCANCODE_RSHIFT];
+    in.sprint = k[SDL_SCANCODE_LCTRL] || k[SDL_SCANCODE_RCTRL] || k[SDL_SCANCODE_LGUI];
     in.jump = k[SDL_SCANCODE_SPACE];
     return in;
 }
@@ -573,6 +627,62 @@ int main(int argc, char** argv) {
     if (!app.templates.Load(templatesPath) && !app.templates.Load("assets/entity_templates.txt"))
         fprintf(stderr, "no entity templates at %s (run tools/entity_templates.py)\n", templatesPath.c_str());
     app.verbose = !shot.empty();
+
+    // --atbl-report <model>: per ATBL record, the motion the animation implies (no window).
+    // Movement comes from the planted (lower) ankle: its velocity in model space is minus the body velocity.
+    std::string report = Arg(argc, argv, "--atbl-report");
+    if (!report.empty()) {
+        const Asset* sa = app.gd.Find(report + ".skel");
+        const Asset* ta = app.gd.Find(report + ".atbl");
+        if (!sa || !ta) { fprintf(stderr, "no %s.skel / .atbl\n", report.c_str()); return 1; }
+        Skeleton sk;
+        LoadSkeleton(app.gd.Read(*sa), sk);
+        int al = sk.Find(NameHash("ankle_l")), ar = sk.Find(NameHash("ankle_r")), pel = sk.Find(NameHash("pelvis"));
+        auto tb = app.gd.Read(*ta);
+        for (size_t o = 8; o + 56 <= tb.size(); o += 56) {
+            uint32_t h, st;
+            float f[12];
+            memcpy(&h, tb.data() + o, 4);
+            memcpy(&st, tb.data() + o + 4, 4);
+            memcpy(f, tb.data() + o + 8, 48);
+            const Asset* aa = app.gd.Find(h);
+            Animation an;
+            if (!aa || !LoadAnimation(app.gd.Read(*aa), an)) { printf("%3u %8.0f %08x  (no anim)\n", st, f[1], h); continue; }
+            float len = an.frameTime * float(an.frames - 1);
+            const int N = 40;
+            glm::vec3 vsum(0);
+            float plo = 1e9f, phi = -1e9f, footLo = 1e9f;
+            int contacts = 0;
+            std::vector<glm::mat4> pal;
+            glm::vec3 prevL, prevR;
+            for (int i = 0; i <= N; ++i) {
+                float t = len * float(i) / N;
+                SamplePose(sk, &an, std::min(t, len - 1e-4f), pal);
+                auto jp = [&](int j) { return glm::vec3((pal[j] * glm::inverse(sk.invBind[j]))[3]); };
+                glm::vec3 L = jp(al), R = jp(ar), P = jp(pel);
+                plo = std::min(plo, P.y);
+                phi = std::max(phi, P.y);
+                footLo = std::min(footLo, std::min(L.y, R.y));
+                if (i > 0) {
+                    glm::vec3 d = (L.y < R.y ? L - prevL : R - prevR) / (len / N);
+                    vsum += glm::vec3(d.x, 0, d.z);
+                    ++contacts;
+                }
+                prevL = L;
+                prevR = R;
+            }
+            glm::vec3 v = contacts ? -vsum / float(contacts) : glm::vec3(0);
+            // facing: chest -> eye direction in the first frame
+            SamplePose(sk, &an, 0, pal);
+            int eye = sk.Find(NameHash("eye")), chest = sk.Find(NameHash("chest"));
+            glm::vec3 face(0);
+            if (eye >= 0 && chest >= 0)
+                face = glm::vec3((pal[eye] * glm::inverse(sk.invBind[eye]))[3] - (pal[chest] * glm::inverse(sk.invBind[chest]))[3]);
+            printf("%3u %8.0f %5.0f %08x  %5.2fs %s  move x %5.2f z %5.2f (%.2f m/s)  pelvis y %.2f..%.2f  foot min %.2f  face x %5.2f z %5.2f\n",
+                   st, f[1], f[2], h, len, an.Loops() ? "loop" : "once", v.x, v.z, glm::length(v), plo, phi, footLo, face.x, face.z);
+        }
+        return 0;
+    }
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -631,16 +741,26 @@ int main(int argc, char** argv) {
             glm::vec2 mv(0);
             sscanf(Arg(argc, argv, "--play-move", "0,0").c_str(), "%f,%f", &mv.x, &mv.y);
             float simT = std::stof(Arg(argc, argv, "--play-time", "0"));
+            float attackEvery = std::stof(Arg(argc, argv, "--play-attack", "0"));   // seconds between presses
+            float jumpAt = std::stof(Arg(argc, argv, "--play-jump", "-1"));
+            float nextAttack = 0;
             for (float t = 0; t < simT; t += 1.0f / 60) {
                 PlayerInput in;
                 in.move = mv;
+                std::string gait = Arg(argc, argv, "--play-gait", "walk");
+                in.run = gait != "walk";
+                in.sprint = gait == "sprint";
+                if (attackEvery > 0 && t >= nextAttack) { in.attack = true; nextAttack = t + attackEvery; }
+                in.jump = jumpAt >= 0 && t >= jumpAt && t < jumpAt + 0.1f;
                 glm::vec3 f = cam.Forward();
                 in.camYaw = std::atan2(f.x, f.z);
                 app.player.Update(app.collision, in, 1.0f / 60);
+                app.ResolvePlayerHit();
+                for (auto& am : app.animated) { float tt; app.EntityAnim(am, t, tt, 1.0f / 60); }
             }
             FollowCamera(cam, app);
-            printf("dan at %.2f %.2f %.2f, ground %d, anim %d\n", app.player.pos.x, app.player.pos.y, app.player.pos.z,
-                   app.player.onGround, int(app.player.anim));
+            printf("dan at %.2f %.2f %.2f, anim time %.2f, ground %d, anim %d\n", app.player.pos.x, app.player.pos.y, app.player.pos.z, app.player.animator.Time(),
+                   app.player.onGround, int(app.player.action));
         }
     }
     printf("%s\n", app.status.c_str());
@@ -652,7 +772,10 @@ int main(int argc, char** argv) {
     int listGroup = startGroup < 0 ? 0 : startGroup;
     Uint64 last = SDL_GetPerformanceCounter();
 
+    Uint32 lmbDownAt = 0;
+    float lmbTravel = 0;
     while (running) {
+        bool attackPressed = false;
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
             ImGui_ImplSDL2_ProcessEvent(&e);
@@ -661,6 +784,17 @@ int main(int argc, char** argv) {
             bool uiMouse = ImGui::GetIO().WantCaptureMouse;
             bool uiKey = ImGui::GetIO().WantCaptureKeyboard;
 
+            // play mode: J or a short left click (no drag) attacks; dragging still orbits the camera
+            if (app.playing && e.type == SDL_KEYDOWN && !uiKey && !e.key.repeat && e.key.keysym.sym == SDLK_j)
+                attackPressed = true;
+            if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT && !uiMouse) {
+                lmbDownAt = SDL_GetTicks();
+                lmbTravel = 0;
+            }
+            if (e.type == SDL_MOUSEMOTION) lmbTravel += std::fabs(float(e.motion.xrel)) + std::fabs(float(e.motion.yrel));
+            if (app.playing && e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT &&
+                SDL_GetTicks() - lmbDownAt < 250 && lmbTravel < 8)
+                attackPressed = true;
             if (e.type == SDL_MOUSEBUTTONDOWN && !uiMouse) {
                 // 1-finger click on trackpad (LMB) or RMB or MMB anywhere in viewport: look around
                 if (e.button.button == SDL_BUTTON_LEFT || e.button.button == SDL_BUTTON_RIGHT || e.button.button == SDL_BUTTON_MIDDLE) {
@@ -713,7 +847,9 @@ int main(int argc, char** argv) {
             PlayerInput in;
             if (!ImGui::GetIO().WantCaptureKeyboard) in = ReadPlayerInput(cam, SDL_GetKeyboardState(nullptr));
             else in.camYaw = std::atan2(cam.Forward().x, cam.Forward().z);
+            in.attack = attackPressed;
             app.player.Update(app.collision, in, dt);
+            app.ResolvePlayerHit();
             FollowCamera(cam, app);
         } else if (!ImGui::GetIO().WantCaptureKeyboard) {
             const Uint8* k = SDL_GetKeyboardState(nullptr);
@@ -744,7 +880,9 @@ int main(int argc, char** argv) {
         app.UpdateDan();
         std::vector<glm::mat4> palette;
         for (auto& am : app.animated) {
-            SamplePose(*am.skel, app.animate ? am.anim.get() : nullptr, animTime + am.phase, palette);
+            float t;
+            const Animation* an = app.EntityAnim(am, animTime, t, dt);
+            SamplePose(*am.skel, an, t, palette);
             Skin(*am.bind, palette, am.posed);
             app.ren.UpdateVertices(*am.mesh, am.posed);
             if (app.verbose) {
@@ -790,7 +928,7 @@ int main(int argc, char** argv) {
             }
             if (app.playing) {
                 ImGui::SameLine();
-                ImGui::Text("WASD move, Shift walk, Space jump, drag to look | %.1f %.1f %.1f%s", app.player.pos.x,
+                ImGui::Text("WASD walk, +Shift run, +Shift+Ctrl sprint, Space jump, J / click attack, drag to look | %.1f %.1f %.1f%s", app.player.pos.x,
                             app.player.pos.y, app.player.pos.z, app.player.onGround ? "" : " (air)");
             }
         }
