@@ -27,6 +27,7 @@ struct GpuTexture {
 struct GpuMesh {
     GLuint vao = 0, vbo = 0, ibo = 0;
     std::vector<Batch> batches;
+    std::vector<uint8_t> minAlpha;              // per batch: lowest vertex alpha
     std::vector<const GpuTexture*> textures;   // per MeshData::textures entry, nullptr = missing
     glm::vec3 bmin{0}, bmax{0};
     ~GpuMesh();

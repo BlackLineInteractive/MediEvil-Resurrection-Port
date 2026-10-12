@@ -190,10 +190,6 @@ struct App {
         bmax = glm::vec3(-1e30f);
     }
     const GpuMesh* Upload(const MeshData& m, int g) {
-        if (const char* f = getenv("MED_MATDBG"))
-            for (const auto& b : m.batches)
-                if (b.texture >= 0 && (!*f || m.textures[b.texture].name.find(f) != std::string::npos))
-                    printf("mat %-36s mfl1 %08x\n", m.textures[b.texture].name.c_str(), b.material);
         meshes.push_back(ren.Upload(m, gd, g));
         meshTris[meshes.back().get()] = m.indices.size() / 3;
         return meshes.back().get();
@@ -279,43 +275,6 @@ struct App {
                     am.skel = src->skel;
                     am.anim = IdleAnim(e.AnimBaseName(), g);
                     am.base = base;
-                    if (verbose) {
-                        std::vector<glm::mat4> pal;
-                        SamplePose(*am.skel, nullptr, 0, pal);
-                        float dev = 0;
-                        for (const auto& m : pal)
-                            for (int c = 0; c < 4; ++c) dev = std::max(dev, glm::length(m[c] - glm::mat4(1.0f)[c]));
-                        size_t maxJ = 0;
-                        for (const auto& w : am.bind->skin) for (int k = 0; k < 4; ++k) if (w.weight[k] > 0) maxJ = std::max<size_t>(maxJ, w.joint[k]);
-                        // vertices far from every joint they are weighted to: wrong joint mapping
-                        std::vector<glm::vec3> jp(am.skel->Size());
-                        for (size_t j = 0; j < jp.size(); ++j) jp[j] = glm::vec3(glm::inverse(am.skel->invBind[j])[3]);
-                        int far = 0, multi = 0;
-                        for (size_t v = 0; v < am.bind->skin.size(); ++v) {
-                            const auto& w = am.bind->skin[v];
-                            float best = 1e9f;
-                            int n = 0;
-                            for (int k = 0; k < 4; ++k) if (w.weight[k] > 0) { ++n; best = std::min(best, glm::length(am.bind->vertices[v].pos - jp[w.joint[k]])); }
-                            far += best > 0.6f;
-                            multi += n > 1;
-                        }
-                        printf("  skin verts %zu far %d multi %d\n", am.bind->skin.size(), far, multi);
-                        {
-                            const auto& V = am.bind->vertices; const auto& I = am.bind->indices;
-                            double lsum = 0; int agree = 0, tot = 0;
-                            for (const auto& v : V) lsum += glm::length(v.normal);
-                            for (size_t t = 0; t + 2 < I.size(); t += 3) {
-                                glm::vec3 fn = glm::cross(V[I[t+1]].pos - V[I[t]].pos, V[I[t+2]].pos - V[I[t]].pos);
-                                if (glm::length(fn) < 1e-8f) continue;
-                                glm::vec3 vn = V[I[t]].normal + V[I[t+1]].normal + V[I[t+2]].normal;
-                                ++tot; agree += glm::dot(fn, vn) > 0;
-                            }
-                            printf("  normal len avg %.3f, face agree %d/%d\n", lsum / V.size(), agree, tot);
-                        }
-                        printf("skinned %s at %.1f,%.1f,%.1f joints %zu bind dev %.4f max joint ref %zu\n", base.c_str(), e.Position().x,
-                               e.Position().y, e.Position().z, am.skel->Size(), dev, maxJ);
-                    }
-                    am.phase = float(i % 7) * 0.37f;   // desynchronise identical characters
                     meshes.push_back(ren.Upload(*am.bind, gd, g, true));
                     am.mesh = meshes.back().get();
                     meshTris[am.mesh] = am.bind->indices.size() / 3;

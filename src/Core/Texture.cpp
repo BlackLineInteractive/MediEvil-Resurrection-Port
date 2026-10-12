@@ -28,6 +28,10 @@ static bool DecodePSMRaw(const uint8_t* d, size_t size, Image& out);
 
 bool DecodePSM(const uint8_t* d, size_t size, Image& out) {
     if (!DecodePSMRaw(d, size, out)) return false;
+    // byte 0x0C == 1 -> texture object flag 0x400 (FUN_002391d4) -> TFUNC TCC = RGBA (FUN_00239f38).
+    // Otherwise the GE ignores the texture alpha and the fragment alpha is the vertex alpha only.
+    if (d[0x0C] != 1)
+        for (size_t i = 3; i < out.rgba.size(); i += 4) out.rgba[i] = 255;
     ClassifyAlpha(out);
     return true;
 }

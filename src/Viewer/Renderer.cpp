@@ -4,6 +4,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include <algorithm>
 #include <cstdio>
 
 namespace med {
@@ -179,6 +180,11 @@ std::unique_ptr<GpuMesh> Renderer::Upload(const MeshData& m, const GameData& gd,
     attr(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(Vertex, color));
     glBindVertexArray(0);
     g->batches = m.batches;
+    for (const auto& b : m.batches) {
+        uint8_t a = 255;
+        for (uint32_t i = 0; i < b.indexCount; ++i) a = std::min<uint8_t>(a, uint8_t(m.vertices[m.indices[b.firstIndex + i]].color >> 24));
+        g->minAlpha.push_back(a);
+    }
     for (const auto& t : m.textures) g->textures.push_back(Texture(t, gd, preferGroup));
     g->bmin = m.bmin;
     g->bmax = m.bmax;
@@ -203,6 +209,31 @@ void Renderer::SetLighting(const DrawItem& it, bool lighting, bool fog) {
     glUniform1f(uFogFar_, l->fogFar);
 }
 
+// Mesh holder blend mode: MFL1 >> 3 & 0xFF (holder+8, FUN_002182bc), applied per holder by FUN_00212adc
+// through FUN_001ee028 -> sceGuBlendFunc. 0 = blending off. Destination alpha (stencil on the PSP) is
+// taken as 1.
+static uint8_t BlendMode(uint32_t mfl1) { return uint8_t(mfl1 >> 3); }
+
+static bool SetBlend(uint8_t mode) {
+    GLenum eq = GL_FUNC_ADD, src = GL_SRC_ALPHA, dst = GL_ONE_MINUS_SRC_ALPHA;
+    switch (mode) {
+    case 0x44: break;                                                         // SRC_ALPHA, 1-SRC_ALPHA
+    // 0x01 is (1-SRC_ALPHA, SRC_ALPHA) in FUN_001ee028, but it is set on ordinary opaque geometry
+    // (mausoleum arches, vertex alpha 255) that would vanish with it; drawn as normal alpha until the
+    // alpha source for these holders is understood.
+    case 0x01: break;
+    case 0x48: dst = GL_ONE; break;                                           // additive
+    case 0x58: src = GL_ONE; dst = GL_ONE; break;                             // DST_ALPHA, FIX white
+    case 0x54: src = GL_ONE; dst = GL_ZERO; break;                            // DST_ALPHA, 1-DST_ALPHA
+    case 0x42: eq = GL_FUNC_REVERSE_SUBTRACT; src = GL_ONE; dst = GL_SRC_ALPHA; break;
+    case 0x52: eq = GL_FUNC_REVERSE_SUBTRACT; src = GL_ONE; dst = GL_ONE; break;
+    default: return false;
+    }
+    glBlendEquation(eq);
+    glBlendFunc(src, dst);
+    return true;
+}
+
 void Renderer::DrawPass(const std::vector<DrawItem>& items, double time, bool textured, bool translucentPass,
                         bool lighting, bool fog) {
     for (const auto& it : items) {
@@ -212,10 +243,16 @@ void Renderer::DrawPass(const std::vector<DrawItem>& items, double time, bool te
         glBindVertexArray(m->vao);
         for (const auto& b : m->batches) {
             const GpuTexture* t = b.texture >= 0 && b.texture < int(m->textures.size()) ? m->textures[b.texture] : nullptr;
-            // Translucency comes from the texture alpha for now: the GE blend state the game sets per
-            // material (MFL1 -> holder flags) is not mapped yet.
-            bool translucent = textured && t && t->translucent;
+            // Blended holders go to the sorted-last pass without depth writes, except alpha blending
+            // (0x44 / 0x01) of opaque vertices with cut-out textures (character atlases, arches), which is
+            // drawn alpha-tested with depth writes. Models use 0x80 = 1.0 vertex alpha.
+            uint8_t mode = BlendMode(b.material);
+            size_t bi = size_t(&b - m->batches.data());
+            bool vertexAlpha = bi < m->minAlpha.size() && m->minAlpha[bi] < (it.object ? 0x78 : 0xF0);
+            bool alphaMode = mode == 0x44 || mode == 0x01;
+            bool translucent = mode != 0 && !(alphaMode && !vertexAlpha && !(textured && t && t->translucent));
             if (translucent != translucentPass) continue;
+            if (translucent && !SetBlend(mode)) SetBlend(0x44);
             GLuint tex = textured && t ? t->At(time) : 0;
             glUniform1i(uTextured_, tex != 0);
             glBindTexture(GL_TEXTURE_2D, tex ? tex : white_);
@@ -251,6 +288,7 @@ void Renderer::Draw(const std::vector<DrawItem>& items, const glm::mat4& view, c
 
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glBindVertexArray(0);
 }
