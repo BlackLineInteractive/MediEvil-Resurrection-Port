@@ -23,6 +23,21 @@
 
 namespace med {
 
+// LIT asset "<subzone>.lit": LIT0 point lights of one sub-zone (FUN_001f52c0, loaded by FUN_001f5694).
+// LIT0: u32 count, then count 0x40-byte records at 16-byte aligned asset offsets ((p + 0x17) & ~15 first):
+//   +0x00 u32 nameHash?, u32, u32 nameOffset, u32
+//   +0x10 vec3 position, float r      (FUN_00217868 keeps r*r)
+//   +0x20 rgb colour                   (1,0,1) is a marker: replaced by (1, .875, .5) and flag 8 is set
+//   +0x30 u8 flags                     (0x10: spot light)
+// FUN_001f7038 adds up to 4 - (directional lights) of them as GE point lights with diffuse colour and
+// sceGuLightAtt(0, 0, 1 / (r*r)^2), i.e. attenuation min(1, r^4 / d^2).
+struct PointLight {
+    glm::vec3 pos{0};
+    float radius = 1;
+    glm::vec3 color{0};
+    uint8_t flags = 0;
+};
+
 struct ZoneLighting {
     glm::vec3 fogColor{0};        // 0..255
     float fogNear = 0, fogFar = 0;
@@ -41,6 +56,8 @@ struct Zone {
 };
 
 bool LoadLand(const std::vector<uint8_t>& data, std::vector<Zone>& out);
+
+bool LoadLights(const std::vector<uint8_t>& data, std::vector<PointLight>& out);
 
 // Zone whose box overlaps [bmin, bmax] the most (sub-zones and zones share their bounds), or the zone
 // containing / closest to the box centre. -1 when there are no zones.

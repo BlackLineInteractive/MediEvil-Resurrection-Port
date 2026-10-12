@@ -168,6 +168,7 @@ struct App {
     std::unordered_map<std::string, std::shared_ptr<const Animation>> anims;
     std::vector<DrawItem> items;
     std::vector<Zone> zones;   // LAND zones of the loaded level (lighting, fog)
+    std::vector<std::unique_ptr<std::vector<PointLight>>> pointLights;   // LIT0 per sub-zone
     int group = -1;
     bool verbose = false;
     std::string status;
@@ -177,6 +178,7 @@ struct App {
     void Clear() {
         items.clear();
         zones.clear();
+        pointLights.clear();
         instanceMeshes.clear();
         entityMeshes.clear();
         meshTris.clear();
@@ -295,8 +297,8 @@ struct App {
         return z < 0 ? nullptr : &zones[z].light;
     }
     void Place(const GpuMesh* mesh, const glm::mat4& model, size_t triCount, const ZoneLighting* light = nullptr,
-               bool object = false) {
-        items.push_back({mesh, model, light, object});
+               bool object = false, const std::vector<PointLight>* points = nullptr) {
+        items.push_back({mesh, model, light, object, points});
         tris += triCount;
         for (int i = 0; i < 8; ++i) {
             glm::vec3 c(i & 1 ? mesh->bmax.x : mesh->bmin.x, i & 2 ? mesh->bmax.y : mesh->bmin.y,
@@ -329,7 +331,17 @@ struct App {
                        sz.mesh.bmin.x, sz.mesh.bmin.y, sz.mesh.bmin.z, sz.mesh.bmax.x, sz.mesh.bmax.y, sz.mesh.bmax.z,
                        sz.instances.size());
             const ZoneLighting* light = ZoneLight(sz.mesh.bmin, sz.mesh.bmax);
-            Place(Upload(sz.mesh, g), glm::mat4(1.0f), sz.mesh.indices.size() / 3, light);
+            // "<subzone>.lit": point lights of this sub-zone
+            const std::vector<PointLight>* points = nullptr;
+            if (const Asset* la = gd.Find(NameHash(".lit", sz.nameHashPrefix), g)) {
+                auto pl = std::make_unique<std::vector<PointLight>>();
+                if (LoadLights(gd.Read(*la), *pl) && !pl->empty()) {
+                    points = pl.get();
+                    if (verbose) printf("  %zu point lights\n", pl->size());
+                    pointLights.push_back(std::move(pl));
+                }
+            }
+            Place(Upload(sz.mesh, g), glm::mat4(1.0f), sz.mesh.indices.size() / 3, light, false, points);
             if (!withInstances) continue;
             for (const auto& inst : sz.instances) {
                 if (inst.model >= sz.models.size() || sz.models[inst.model].mode == -1) continue;
@@ -347,7 +359,7 @@ struct App {
                     it = instanceMeshes.emplace(h, gm).first;
                 }
                 if (!it->second) { ++missing; continue; }
-                Place(it->second, inst.world, instTris[h], light);
+                Place(it->second, inst.world, instTris[h], light, false, points);
                 ++placed;
             }
         }

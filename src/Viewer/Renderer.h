@@ -39,6 +39,7 @@ struct DrawItem {
     glm::mat4 model{1.0f};
     const ZoneLighting* light = nullptr;   // zone lighting; null: unlit
     bool object = false;                   // model (object ambient, 0x80 = 1.0 colours) vs sub-zone geometry
+    const std::vector<PointLight>* points = nullptr;   // the sub-zone's LIT0 point lights
 };
 
 class Renderer {
@@ -59,7 +60,7 @@ private:
     void SetLighting(const DrawItem& it, bool lighting, bool fog);
     GLuint prog_ = 0;
     GLint uViewProj_ = -1, uView_ = -1, uModel_ = -1, uLightMode_ = -1, uAmbient_ = -1, uLightCol_ = -1,
-          uLightDir_ = -1, uFog_ = -1, uFogColor_ = -1, uFogNear_ = -1, uFogFar_ = -1, uTextured_ = -1, uVColor_ = -1, uTex_ = -1, uAlphaRef_ = -1;
+          uLightDir_ = -1, uPointPos_ = -1, uPointCol_ = -1, uPointAtt_ = -1, uPointCount_ = -1, uFog_ = -1, uFogColor_ = -1, uFogNear_ = -1, uFogFar_ = -1, uTextured_ = -1, uVColor_ = -1, uTex_ = -1, uAlphaRef_ = -1;
     GLuint white_ = 0;
     std::unordered_map<std::string, std::unique_ptr<GpuTexture>> texCache_;
     int missing_ = 0;

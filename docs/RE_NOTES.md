@@ -265,3 +265,19 @@ with GE lighting on and `sceGuColorMaterial(7)`, so the baked vertex colour is t
   with depth writes, otherwise the parts of a character sort wrongly.
 - **ANIMS**: the corporeal component `ANIMS = .../x_apkg.group` names the animation set
   (`x_*.anim`, `x.atbl`). Models share sets: `zombie_stalker_2` uses `zombie_stalker_1`'s.
+
+## 15. Point lights (LIT)
+
+- The asset is `"<subzone>.lit"`: hash it as `NameHash(".lit", NameHashStripSuffix(subzHash, ".subz"))`.
+  This matches 32 sub-zones (19 unique LIT assets); sub-zones without lights have no LIT.
+- LIT0 (`FUN_001f52c0`) holds a `u32` count, then 0x40-byte records at 16-byte aligned asset offsets
+  (the first at `(p + 0x17) & ~15`). Record layout:
+  - +0x10: position xyz, plus `r`
+  - +0x20: colour
+  - +0x30: `u8` flags (0x10 = spot; it then uses +0x50 direction / `FUN_001e9a94`)
+- The colour (1,0,1) is a marker. It is replaced by (1, .875, .5) with flag 8 set (probably flicker).
+- In the sub-zone draw (`FUN_001f7038`), the GE has 4 lights: the enabled directional zone lights
+  come first, then up to 4−n LIT lights in file order.
+- Each LIT light gets its diffuse colour, with ambient black, and `sceGuLightAtt(0, 0, 1/(r²)²)`.
+  `FUN_00217868` stores r² at +0x3c. The effective attenuation is `min(1, r⁴/d²)`.
+- Dan's Crypt lava room: one light at (−60.0, −0.6, −19.7), r 2.03, colour (1, .74, 0).

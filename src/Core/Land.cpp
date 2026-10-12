@@ -67,6 +67,32 @@ bool LoadLand(const std::vector<uint8_t>& data, std::vector<Zone>& out) {
     return found;
 }
 
+bool LoadLights(const std::vector<uint8_t>& data, std::vector<PointLight>& out) {
+    bool found = false;
+    ForEachChunk(data.data(), data.size(), [&](const Chunk& c) {
+        if (!c.Is("LIT0")) return;
+        found = true;
+        uint32_t n = c.At<uint32_t>(0);
+        size_t rec = (c.OffsetInAsset() + 0x17) & ~size_t(15);
+        for (uint32_t i = 0; i < n; ++i, rec += 0x40) {
+            size_t o = rec - c.OffsetInAsset();
+            if (o + 0x40 > c.size) break;
+            PointLight l;
+            l.pos = {c.At<float>(o + 0x10), c.At<float>(o + 0x14), c.At<float>(o + 0x18)};
+            l.radius = c.At<float>(o + 0x1c);
+            l.color = {c.At<float>(o + 0x20), c.At<float>(o + 0x24), c.At<float>(o + 0x28)};
+            l.flags = c.At<uint8_t>(o + 0x30);
+            if (l.color.r > 0.99f && l.color.g < 0.001f && l.color.b > 0.99f) {
+                l.color = {1.0f, 0.875f, 0.5f};
+                l.flags |= 8;
+            }
+            l.color = glm::clamp(l.color, glm::vec3(0), glm::vec3(1));
+            out.push_back(l);
+        }
+    });
+    return found;
+}
+
 int FindZone(const std::vector<Zone>& zones, glm::vec3 bmin, glm::vec3 bmax) {
     int best = -1;
     float bestScore = -1e30f;

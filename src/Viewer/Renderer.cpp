@@ -17,6 +17,7 @@ layout(location=3) in vec4 aCol;
 uniform mat4 uViewProj, uView, uModel;
 uniform int uLightMode;          // 0: unlit (vertex colour x2), 1: GE lighting, world, 2: GE lighting, model
 uniform vec3 uAmbient, uLightCol[2], uLightDir[2];
+uniform int uPointCount; uniform vec3 uPointPos[4], uPointCol[4]; uniform float uPointAtt[4];
 out vec2 vUV; out vec4 vCol; out vec3 vNrm; out float vDepth;
 void main() {
     vUV = aUV; vNrm = mat3(uModel) * aNrm;
@@ -31,6 +32,12 @@ void main() {
         vec3 n = normalize(vNrm);
         vec3 c = uAmbient * mat.rgb;
         for (int i = 0; i < 2; ++i) c += uLightCol[i] * mat.rgb * max(dot(n, uLightDir[i]), 0.0);
+        // GE point lights: diffuse * min(1, 1 / (att * d^2))
+        for (int i = 0; i < uPointCount; ++i) {
+            vec3 d = uPointPos[i] - wp.xyz;
+            float d2 = max(dot(d, d), 1e-6);
+            c += uPointCol[i] * mat.rgb * max(dot(n, d * inversesqrt(d2)), 0.0) * min(1.0, 1.0 / (uPointAtt[i] * d2));
+        }
         vCol = vec4(min(c, vec3(1.0)), mat.a);
     }
     gl_Position = uViewProj * wp;
@@ -101,6 +108,10 @@ bool Renderer::Init() {
     uLightCol_ = glGetUniformLocation(prog_, "uLightCol");
     uLightDir_ = glGetUniformLocation(prog_, "uLightDir");
     uFog_ = glGetUniformLocation(prog_, "uFog");
+    uPointPos_ = glGetUniformLocation(prog_, "uPointPos");
+    uPointCol_ = glGetUniformLocation(prog_, "uPointCol");
+    uPointAtt_ = glGetUniformLocation(prog_, "uPointAtt");
+    uPointCount_ = glGetUniformLocation(prog_, "uPointCount");
     uFogColor_ = glGetUniformLocation(prog_, "uFogColor");
     uFogNear_ = glGetUniformLocation(prog_, "uFogNear");
     uFogFar_ = glGetUniformLocation(prog_, "uFogFar");
@@ -203,6 +214,27 @@ void Renderer::SetLighting(const DrawItem& it, bool lighting, bool fog) {
         dir[i] = l->lightDir[i];
     }
     glUniform3fv(uLightCol_, 2, glm::value_ptr(col[0]));
+    // FUN_001f7038: the GE has 4 lights; the enabled directional ones come first, then the sub-zone's
+    // LIT0 lights in file order
+    int nDir = int(l->lightOn[0]) + int(l->lightOn[1]);
+    int np = 0;
+    glm::vec3 ppos[4], pcol[4];
+    float patt[4];
+    if (it.points && !it.object)
+        for (const PointLight& p : *it.points) {
+            if (np >= 4 - nDir) break;
+            ppos[np] = p.pos;
+            pcol[np] = p.color;
+            float r2 = p.radius * p.radius;
+            patt[np] = r2 > 0 ? 1.0f / (r2 * r2) : 1.0f;
+            ++np;
+        }
+    glUniform1i(uPointCount_, np);
+    if (np) {
+        glUniform3fv(uPointPos_, np, glm::value_ptr(ppos[0]));
+        glUniform3fv(uPointCol_, np, glm::value_ptr(pcol[0]));
+        glUniform1fv(uPointAtt_, np, patt);
+    }
     glUniform3fv(uLightDir_, 2, glm::value_ptr(dir[0]));
     glUniform3fv(uFogColor_, 1, glm::value_ptr(l->fogColor / 255.0f));
     glUniform1f(uFogNear_, l->fogNear);
