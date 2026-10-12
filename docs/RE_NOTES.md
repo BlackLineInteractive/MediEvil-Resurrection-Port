@@ -342,3 +342,22 @@ with GE lighting on and `sceGuColorMaterial(7)`, so the baked vertex colour is t
   - camera pull-in.
 
   This is not yet a port of the game's own movement code (DanBrain).
+
+## 18. Dan control code (work in progress)
+
+Located, not yet ported (the current `Core/Player` is a placeholder controller, NOT the game's logic):
+
+- Pad: `FUN_001ea3bc` (sceCtrlReadBufferPositive). Pad struct +0x18 held, +0x1c pressed, +0x20 released,
+  +0xdc/+0xe0 stick axes ((v-128)*0.007874016, -1..1), deadzone `FUN_001ea594`.
+- danbrain: registered in `FUN_000946e4`, size 0x1900, factory `FUN_00295548`, ctor `FUN_000879b8`,
+  vtable 0x329fc0 (slots: 00088310 00087c3c 00087d78 001dae5c 00088564 0028adcc 00088860 00088868 0028add4
+  001c6a78 0028affc 0028b004 000884e0 001db2a8 001c6fc4 001db434 0028b00c 0028b014 0028ceac 0028b01c
+  0028b050 00093870 00093974 001c7004). Code ~0x879b8-0x95000.
+- dananimator: registered in `FUN_0008781c`, size 0x1090, factory `FUN_00295378`, ctor `FUN_0007f798`,
+  vtable 0x329f08. Code ~0x7f798-0x8781c. Update `FUN_00080564`: components via `FUN_001d4d94(ent, 1/7/3/10)`
+  -> +0x107c/+0x1080/+0x1084/+0x1088, then calls 00086754 0008645c 00080bd8 00081684 0008313c 00084058
+  00083284 0008349c 00083564 000835ec 00083674 00083970, 000855fc(+0xf40,+0xf30), 000855fc(+0xf44,+0xf34),
+  00085978 000852a8.
+- Not found yet: the mapping from animator states to dan.atbl (state, variant). `FUN_0001149c` is an item
+  counter, not anim code.
+- Firefly: sfx_fairy_glow_abe.psm / sfx_fairy_trail_abe.psm, used in `FUN_00140374` / `FUN_00151048`.
